@@ -12,15 +12,19 @@ import {
   query, 
   where, 
   orderBy, 
+  limit,
   Timestamp 
 } from '@angular/fire/firestore';
-import { Observable, map, from } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { 
   Event, 
   Reservation, 
   AppSettings, 
   Gallery, 
-  ReservationStatus 
+  ReservationStatus,
+  HeroSlide,
+  Feedback,
+  FeedbackStatus
 } from '../models';
 
 @Injectable({
@@ -29,14 +33,78 @@ import {
 export class FirestoreService {
   private firestore: Firestore = inject(Firestore);
 
-  // ==========================================
-  // EVENTS
-  // ==========================================
+  // --- FEEDBACKS (NOUVEAU) ---
 
+  // Pour l'Admin : Voir tous les feedbacks
+  getAllFeedbacks(): Observable<Feedback[]> {
+    const ref = collection(this.firestore, 'feedbacks');
+    const q = query(ref, orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }).pipe(
+      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
+    ) as Observable<Feedback[]>;
+  }
+
+  // Pour le Site Public : Voir seulement les approuvés
+  getApprovedFeedbacks(limitCount: number = 3): Observable<Feedback[]> {
+    const ref = collection(this.firestore, 'feedbacks');
+    const q = query(
+      ref, 
+      where('status', '==', 'approved'), 
+      orderBy('createdAt', 'desc'), 
+      limit(limitCount)
+    );
+    return collectionData(q, { idField: 'id' }).pipe(
+      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
+    ) as Observable<Feedback[]>;
+  }
+
+  // Ajouter un avis (Statut pending par défaut)
+  addFeedback(feedback: Partial<Feedback>): Promise<void> {
+    const ref = collection(this.firestore, 'feedbacks');
+    return addDoc(ref, {
+      ...feedback,
+      status: 'pending',
+      createdAt: Timestamp.now()
+    }).then(() => undefined);
+  }
+
+  // Modération (Approuver/Rejeter)
+  updateFeedbackStatus(id: string, status: FeedbackStatus): Promise<void> {
+    const docRef = doc(this.firestore, `feedbacks/${id}`);
+    return updateDoc(docRef, { status });
+  }
+
+  deleteFeedback(id: string): Promise<void> {
+    const docRef = doc(this.firestore, `feedbacks/${id}`);
+    return deleteDoc(docRef);
+  }
+
+  // --- HERO SLIDER ---
+  getHeroSlides(): Observable<HeroSlide[]> {
+    const ref = collection(this.firestore, 'hero_slides');
+    const q = query(ref, orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }).pipe(
+      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
+    ) as Observable<HeroSlide[]>;
+  }
+
+  addHeroSlide(slide: HeroSlide): Promise<void> {
+    const ref = collection(this.firestore, 'hero_slides');
+    return addDoc(ref, {
+      ...slide,
+      createdAt: Timestamp.now()
+    }).then(() => undefined);
+  }
+
+  deleteHeroSlide(id: string): Promise<void> {
+    const docRef = doc(this.firestore, `hero_slides/${id}`);
+    return deleteDoc(docRef);
+  }
+
+  // --- EVENTS ---
   getEvents(): Observable<Event[]> {
     const eventsRef = collection(this.firestore, 'events');
     const q = query(eventsRef, orderBy('date', 'desc'));
-    
     return collectionData(q, { idField: 'eventId' }).pipe(
       map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
     ) as Observable<Event[]>;
@@ -51,7 +119,6 @@ export class FirestoreService {
 
   addEvent(event: Event): Promise<void> {
     const eventsRef = collection(this.firestore, 'events');
-    // On laisse Firestore gérer l'ID
     return addDoc(eventsRef, {
       ...event,
       createdAt: Timestamp.now(),
@@ -72,30 +139,13 @@ export class FirestoreService {
     return deleteDoc(docRef);
   }
 
-  // ==========================================
-  // RESERVATIONS
-  // ==========================================
-
-  /**
-   * Récupère les réservations, optionnellement filtrées par type ('boat' | 'park')
-   */
+  // --- RESERVATIONS ---
   getReservations(type?: 'boat' | 'park'): Observable<Reservation[]> {
     const ref = collection(this.firestore, 'reservations');
     let q = query(ref, orderBy('createdAt', 'desc'));
-
     if (type) {
       q = query(ref, where('type', '==', type), orderBy('createdAt', 'desc'));
     }
-
-    return collectionData(q, { idField: 'reservationId' }).pipe(
-      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
-    ) as Observable<Reservation[]>;
-  }
-
-  getReservationsByStatus(status: ReservationStatus): Observable<Reservation[]> {
-    const ref = collection(this.firestore, 'reservations');
-    const q = query(ref, where('status', '==', status), orderBy('createdAt', 'desc'));
-
     return collectionData(q, { idField: 'reservationId' }).pipe(
       map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
     ) as Observable<Reservation[]>;
@@ -106,7 +156,7 @@ export class FirestoreService {
     return addDoc(ref, {
       ...reservation,
       createdAt: Timestamp.now(),
-      status: 'pending' // Default status
+      status: 'pending'
     }).then(() => undefined);
   }
 
@@ -120,13 +170,7 @@ export class FirestoreService {
     return deleteDoc(docRef);
   }
 
-  // ==========================================
-  // SETTINGS
-  // ==========================================
-
-  /**
-   * Nous utilisons un ID unique 'main' pour les settings
-   */
+  // --- SETTINGS ---
   getSettings(): Observable<AppSettings> {
     const docRef = doc(this.firestore, 'settings/main');
     return docData(docRef) as Observable<AppSettings>;
@@ -134,22 +178,16 @@ export class FirestoreService {
 
   updateSettings(data: Partial<AppSettings>): Promise<void> {
     const docRef = doc(this.firestore, 'settings/main');
-    // setDoc avec { merge: true } crée le document s'il n'existe pas encore
     return setDoc(docRef, data, { merge: true });
   }
 
-  // ==========================================
-  // GALLERIES
-  // ==========================================
-
+  // --- GALLERIES ---
   getGalleries(category?: 'park' | 'events' | 'boats'): Observable<Gallery[]> {
     const ref = collection(this.firestore, 'galleries');
     let q = query(ref, orderBy('createdAt', 'desc'));
-
     if (category) {
       q = query(ref, where('category', '==', category), orderBy('createdAt', 'desc'));
     }
-
     return collectionData(q, { idField: 'galleryId' }).pipe(
       map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
     ) as Observable<Gallery[]>;
@@ -173,27 +211,15 @@ export class FirestoreService {
     return deleteDoc(docRef);
   }
 
-  // ==========================================
-  // HELPERS (Date Conversion)
-  // ==========================================
-
-  /**
-   * Helper pour convertir les Timestamps Firestore en Date JavaScript.
-   * Firestore retourne des objets Timestamp { seconds, nanoseconds } qui ne sont pas
-   * directement lisibles par les Pipes Date d'Angular sans conversion.
-   */
+  // --- HELPERS ---
   private mapDateFields(data: any): any {
     const converted = { ...data };
-    
-    // Liste des champs susceptibles d'être des dates
     const dateFields = ['date', 'createdAt', 'updatedAt'];
-
     dateFields.forEach(field => {
       if (converted[field] && typeof converted[field].toDate === 'function') {
         converted[field] = converted[field].toDate();
       }
     });
-
     return converted;
   }
 }

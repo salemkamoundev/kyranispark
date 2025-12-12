@@ -1,3 +1,7 @@
 :host {
-  display: block;
+  display: block;        /* OBLIGATOIRE pour que le footer ait une hauteur */
+  width: 100%;           /* Prend toute la largeur */
+  position: relative;    /* Permet le z-index */
+  z-index: 50;           /* Au-dessus du reste */
+  background-color: #111827; /* Gris très foncé (Tailwind gray-900) pour éviter le blanc */
 }

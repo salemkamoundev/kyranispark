@@ -1,12 +1,8 @@
-import { Component, OnInit, OnDestroy, HostListener, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { trigger, transition, style, animate, query, group } from '@angular/animations';
-
-interface Slide {
-  image: string;
-  title: string;
-  subtitle: string;
-}
+import { FirestoreService } from '../../services/firestore.service';
+import { HeroSlide } from '../../models';
 
 @Component({
   selector: 'app-hero-slider',
@@ -42,29 +38,33 @@ interface Slide {
   ]
 })
 export class HeroSliderComponent implements OnInit, OnDestroy {
-  slides: Slide[] = [
+  private firestoreService = inject(FirestoreService);
+
+  // Images statiques de secours (Fallback)
+  defaultSlides: HeroSlide[] = [
     {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1765513253/search_images/1ae70ea58b03bdb7ef99b684e9f870dd1c50316a.jpg',
+      imageUrl: 'https://pplx-res.cloudinary.com/image/upload/v1765513253/search_images/1ae70ea58b03bdb7ef99b684e9f870dd1c50316a.jpg',
       title: 'Bienvenue à Kyranis Park',
-      subtitle: 'L\'évasion au cœur des îles Kerkennah'
+      subtitle: 'L\'évasion au cœur des îles Kerkennah',
+      createdAt: new Date()
     },
     {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1765513254/search_images/767fece22dcfe0ef399c8e99d9ed66a010bd6e11.jpg',
+      imageUrl: 'https://pplx-res.cloudinary.com/image/upload/v1765513254/search_images/767fece22dcfe0ef399c8e99d9ed66a010bd6e11.jpg',
       title: 'Des Moments Inoubliables',
-      subtitle: 'Célébrez vos événements dans un cadre unique'
+      subtitle: 'Célébrez vos événements dans un cadre unique',
+      createdAt: new Date()
     },
     {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1763880066/search_images/f9a3f2ffd5ad5d033ed42d88e8eb078c1dc7cd6b.jpg',
+      imageUrl: 'https://pplx-res.cloudinary.com/image/upload/v1763880066/search_images/f9a3f2ffd5ad5d033ed42d88e8eb078c1dc7cd6b.jpg',
       title: 'Excursions en Bateau',
-      subtitle: 'Découvrez la beauté maritime de l\'archipel'
-    },
-    {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1765513253/search_images/1e914eb0d27d61e234de07e9b6554c6b5420ea47.jpg',
-      title: 'Gastronomie & Détente',
-      subtitle: 'Savourez la vie au bord de l\'eau'
+      subtitle: 'Découvrez la beauté maritime de l\'archipel',
+      createdAt: new Date()
     }
   ];
 
+  // IMPORTANT: On initialise avec les défauts pour éviter l'écran vide au chargement
+  slides: HeroSlide[] = [...this.defaultSlides];
+  
   currentIndex = 0;
   intervalId: any;
   scrollY = 0;
@@ -75,6 +75,26 @@ export class HeroSliderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // On écoute Firestore
+    this.firestoreService.getHeroSlides().subscribe({
+      next: (data) => {
+        // Si on reçoit des données valides, on remplace les défauts
+        if (data && data.length > 0) {
+          this.slides = data;
+          // Réinitialiser l'index si on dépasse la nouvelle longueur
+          if (this.currentIndex >= this.slides.length) {
+            this.currentIndex = 0;
+          }
+        }
+        // Sinon, on garde this.defaultSlides (déjà set)
+        this.resetTimer();
+      },
+      error: (err) => {
+        console.error('Erreur chargement slider:', err);
+        // En cas d'erreur, on garde les défauts
+      }
+    });
+
     this.startAutoPlay();
   }
 
@@ -109,11 +129,13 @@ export class HeroSliderComponent implements OnInit, OnDestroy {
   }
 
   nextSlide() {
+    if (!this.slides || this.slides.length === 0) return;
     this.currentIndex = (this.currentIndex + 1) % this.slides.length;
     this.resetTimer();
   }
 
   prevSlide() {
+    if (!this.slides || this.slides.length === 0) return;
     this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
     this.resetTimer();
   }

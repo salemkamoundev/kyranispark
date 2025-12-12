@@ -1,78 +1,51 @@
-<footer class="bg-gray-900 text-white border-t border-gray-800">
+<div class="bg-gray-900 text-white w-full border-t border-gray-800">
+  
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
       
       <div class="space-y-4">
         <div class="flex items-center space-x-2">
-          <span class="text-2xl font-bold tracking-wider text-blue-500">KYRANIS<span class="text-white">PARK</span></span>
+           <span class="text-2xl font-bold tracking-wider text-blue-500">
+             {{ (settings?.businessName || 'KYRANIS PARK') | uppercase }}
+           </span>
         </div>
         <p class="text-gray-400 text-sm leading-relaxed">
-          Votre porte d'entrée vers la magie des îles Kerkennah. 
-          Entre mer cristalline et palmeraies, vivez une expérience unique alliant détente, 
-          gastronomie et aventure maritime.
+          {{ settings?.homePageDescription || 'Votre évasion au cœur des îles.' }}
         </p>
-        
-        <div class="flex space-x-4 pt-2">
-          <a href="https://facebook.com/kyranispark" target="_blank" class="text-gray-400 hover:text-blue-500 transition-colors">
-            <span class="sr-only">Facebook</span>
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" />
-            </svg>
-          </a>
-          <a href="#" class="text-gray-400 hover:text-pink-500 transition-colors">
-            <span class="sr-only">Instagram</span>
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772 4.902 4.902 0 011.772-1.153c.636-.247 1.363-.416 2.427-.465C9.673 2.013 10.03 2 12.48 2h-.165zm0 1.981h.166c-2.444 0-2.753.01-3.652.054-.91.042-1.403.195-1.734.323-.42.164-.72.36-.975.614-.255.255-.45.556-.614.975-.128.33-.28.824-.323 1.734-.044.899-.053 1.208-.053 3.652 0 2.443.01 2.753.054 3.652.042.91.195 1.403.323 1.734.164.42.36.72.614.975.255.255.556.45.975.614.33.128.824.28 1.734.323.899.044 1.208.053 3.652.053 2.443 0 2.753-.01 3.652-.054.91-.042 1.403-.195 1.734-.323.42-.164.72-.36.975-.614.255-.255.45-.556.614-.975.128-.33.28-.824.323-1.734.044-.899.053-1.208.053-3.652 0-2.443-.01-2.753-.054-3.652-.042-.91-.195-1.403-.323-1.734-.164-.42-.36-.72-.614-.975-.255-.255-.556-.45-.975-.614-.33-.128-.824-.28-1.734-.323-.899-.044-1.208-.053-3.652-.053zm3.78 1.574a1.32 1.32 0 110 2.64 1.32 1.32 0 010-2.64zM12.48 7.02c-2.836 0-5.137 2.3-5.137 5.136 0 2.835 2.301 5.136 5.137 5.136 2.835 0 5.136-2.3 5.136-5.136 0-2.836-2.301-5.136-5.136-5.136zm0 2.12a3.016 3.016 0 100 6.032 3.016 3.016 0 000-6.032z" clip-rule="evenodd" />
-            </svg>
-          </a>
-        </div>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider">Navigation</h3>
-        <ul class="space-y-3">
-          <li><a routerLink="/" class="text-gray-400 hover:text-blue-500 transition-colors">Accueil</a></li>
-          <li><a routerLink="/evenements" class="text-gray-400 hover:text-blue-500 transition-colors">Nos Événements</a></li>
-          <li><a routerLink="/reservations" class="text-gray-400 hover:text-blue-500 transition-colors">Réserver Bateau / Parc</a></li>
-          <li><a routerLink="/contact" class="text-gray-400 hover:text-blue-500 transition-colors">Contact</a></li>
-          <li><a routerLink="/mentions-legales" class="text-gray-400 hover:text-blue-500 transition-colors text-xs">Mentions Légales</a></li>
+        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Menu</h3>
+        <ul class="space-y-3 text-sm">
+          <li><a routerLink="/" class="text-gray-400 hover:text-blue-400 no-underline">Accueil</a></li>
+          <li><a routerLink="/evenements" class="text-gray-400 hover:text-blue-400 no-underline">Agenda</a></li>
+          <li><a routerLink="/reservations" class="text-gray-400 hover:text-blue-400 no-underline">Réserver</a></li>
+          <li><a routerLink="/contact" class="text-gray-400 hover:text-blue-400 no-underline">Contact</a></li>
         </ul>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider">Nous Contacter</h3>
-        <ul class="space-y-4">
+        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Infos</h3>
+        <ul class="space-y-4 text-sm">
           <li class="flex items-start">
-            <svg class="h-6 w-6 text-blue-500 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span class="text-gray-400">Zone Touristique,<br>Îles Kerkennah, Tunisie</span>
+            <span class="text-blue-500 mr-3">📍</span>
+            <span class="text-gray-300">{{ settings?.address || 'Zone Touristique' }}</span>
           </li>
           <li class="flex items-center">
-            <svg class="h-6 w-6 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            <span class="text-gray-400">+216 28 417 822</span>
+            <span class="text-blue-500 mr-3">📞</span>
+            <a href="tel:{{ settings?.phone }}" class="text-white font-medium hover:text-blue-400 no-underline">{{ settings?.phone || '--' }}</a>
           </li>
           <li class="flex items-center">
-            <svg class="h-6 w-6 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <span class="text-gray-400">contact@kyranispark.tn</span>
+            <span class="text-blue-500 mr-3">✉️</span>
+            <a href="mailto:{{ settings?.email }}" class="text-gray-300 hover:text-white no-underline">{{ settings?.email || '--' }}</a>
           </li>
         </ul>
       </div>
     </div>
     
-    <div class="mt-12 pt-8 border-t border-gray-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center">
-      <p class="text-gray-500 text-sm">
-        &copy; {{ currentYear }} Kyranis Park. Tous droits réservés.
-      </p>
-      <div class="mt-4 md:mt-0">
-        <span class="text-gray-600 text-xs">Designed for Kerkennah Lovers</span>
-      </div>
+    <div class="mt-12 pt-8 border-t border-gray-800 text-center text-xs text-gray-500">
+      <p>© {{ currentYear }} {{ settings?.businessName }}. Tous droits réservés.</p>
+      <a routerLink="/admin-login" class="mt-2 inline-block hover:text-white">Admin</a>
     </div>
   </div>
-</footer>
+</div>

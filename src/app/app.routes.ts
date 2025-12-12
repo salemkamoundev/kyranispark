@@ -3,7 +3,7 @@ import { adminGuard } from './guards/admin.guard';
 import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
 
 export const routes: Routes = [
-  // --- ROUTES PUBLIQUES (Lazy Loaded) ---
+  // --- ROUTES PUBLIQUES ---
   { 
     path: '', 
     loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) 
@@ -25,7 +25,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent) 
   },
 
-  // --- ADMIN ROUTES (Lazy Loaded Children) ---
+  // --- ADMIN ROUTES ---
   { 
     path: 'admin', 
     loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
@@ -49,12 +49,20 @@ export const routes: Routes = [
         loadComponent: () => import('./components/admin-dashboard/manage-gallery/manage-gallery.component').then(m => m.ManageGalleryComponent) 
       },
       { 
+        path: 'hero', 
+        loadComponent: () => import('./components/admin-dashboard/manage-hero/manage-hero.component').then(m => m.ManageHeroComponent) 
+      },
+      // NOUVELLE ROUTE FEEDBACK
+      { 
+        path: 'feedback', 
+        loadComponent: () => import('./components/admin-dashboard/manage-feedback/manage-feedback.component').then(m => m.ManageFeedbackComponent) 
+      },
+      { 
         path: 'settings', 
         loadComponent: () => import('./components/admin-dashboard/settings/settings.component').then(m => m.SettingsComponent) 
       }
     ]
   },
 
-  // --- 404 ---
   { path: '**', component: PageNotFoundComponent }
 ];

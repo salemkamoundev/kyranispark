@@ -1,78 +1,137 @@
 import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
-// Services & Models
 import { FirestoreService } from '../../services/firestore.service';
-import { AppSettings, Gallery, Event } from '../../models';
-
-// Components
+import { AppSettings, Gallery, Event, Feedback } from '../../models';
 import { HeroSliderComponent } from '../../components/hero-slider/hero-slider.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, HeroSliderComponent, DatePipe],
+  imports: [CommonModule, RouterModule, HeroSliderComponent, DatePipe, ReactiveFormsModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
+  private fb = inject(FormBuilder);
 
-  // Streams de données
+  // Données principales
   settings$: Observable<AppSettings> = this.firestoreService.getSettings();
-  
-  // Galeries
   parkGalleries$: Observable<Gallery[]> = this.firestoreService.getGalleries('park');
-
-  // Événements à venir (Max 3 pour l'accueil)
   upcomingEvents$: Observable<Event[]> = this.firestoreService.getEvents().pipe(
     map(events => {
       const now = new Date();
-      now.setHours(0, 0, 0, 0); // Inclure aujourd'hui
+      now.setHours(0, 0, 0, 0);
       return events
         .filter(e => {
           const d = e.date instanceof Date ? e.date : new Date(e.date);
           return d >= now;
         })
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .slice(0, 3); // Prendre les 3 prochains
+        .slice(0, 3);
     })
   );
 
-  // Mock Témoignages
-  testimonials = [
-    {
-      name: 'Sarah M.',
-      role: 'Visiteuse',
-      text: 'Une journée inoubliable ! Le coucher de soleil sur le bateau était magique. L\'équipe est aux petits soins.',
-      rating: 5
-    },
-    {
-      name: 'Ahmed K.',
-      role: 'Organisateur Événement',
-      text: 'Nous avons organisé notre séminaire d\'entreprise ici. Le cadre est inspirant et les services parfaits.',
-      rating: 5
-    },
-    {
-      name: 'Famille Tounsi',
-      role: 'Vacances',
-      text: 'Les enfants ont adoré le parc et nous la tranquillité. La cuisine locale est délicieuse.',
-      rating: 4
-    }
-  ];
+  // AVIS CLIENTS
+  approvedFeedbacks$: Observable<Feedback[]> = this.firestoreService.getApprovedFeedbacks(3);
 
-  // --- GESTION LIGHTBOX ---
+  // LOGIQUE FEEDBACK & CAPTCHA
+  isFeedbackModalOpen = false;
+  feedbackForm: FormGroup;
+  isSubmittingFeedback = false;
+  captchaA = 0;
+  captchaB = 0;
+  captchaAnswer = 0;
+  
+  stars: number[] = [1, 2, 3, 4, 5];
+
+  // LOGIQUE LIGHTBOX
   lightboxOpen = false;
   selectedGallery: Gallery | null = null;
   currentImageIndex = 0;
 
-  constructor() {}
+  constructor() {
+    this.feedbackForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      message: ['', [Validators.required, Validators.minLength(10)]],
+      rating: [5, Validators.required],
+      captcha: ['', Validators.required]
+    });
+  }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.generateCaptcha();
+  }
 
+  // --- FEEDBACK & CAPTCHA ---
+
+  generateCaptcha() {
+    this.captchaA = Math.floor(Math.random() * 10) + 1;
+    this.captchaB = Math.floor(Math.random() * 10) + 1;
+    this.captchaAnswer = this.captchaA + this.captchaB;
+    this.feedbackForm.get('captcha')?.setValue('');
+  }
+
+  openFeedbackModal() {
+    this.isFeedbackModalOpen = true;
+    this.generateCaptcha();
+  }
+
+  closeFeedbackModal() {
+    this.isFeedbackModalOpen = false;
+    this.feedbackForm.reset({ rating: 5 });
+  }
+
+  setRating(rating: number) {
+    this.feedbackForm.patchValue({ rating: rating });
+  }
+
+  async submitFeedback() {
+    // MODIFICATION ICI: Si invalide, on affiche les erreurs (rouge) au lieu de bloquer silencieusement
+    if (this.feedbackForm.invalid) {
+      this.feedbackForm.markAllAsTouched();
+      return;
+    }
+
+    const userAnswer = parseInt(this.feedbackForm.get('captcha')?.value, 10);
+    if (userAnswer !== this.captchaAnswer) {
+      alert(`Calcul incorrect (${this.captchaA} + ${this.captchaB}). Veuillez réessayer.`);
+      // On ne régénère pas forcément tout de suite pour laisser l'utilisateur corriger
+      return;
+    }
+
+    this.isSubmittingFeedback = true;
+    const { name, message, rating } = this.feedbackForm.value;
+
+    try {
+      await this.firestoreService.addFeedback({
+        name,
+        message,
+        rating: parseInt(rating, 10),
+      });
+      
+      alert('Merci ! Votre avis a été envoyé et sera publié après validation.');
+      this.closeFeedbackModal();
+    } catch (e) {
+      console.error(e);
+      alert('Une erreur est survenue.');
+    } finally {
+      this.isSubmittingFeedback = false;
+    }
+  }
+
+  // Helper pour le HTML
+  isFieldInvalid(field: string) {
+    const control = this.feedbackForm.get(field);
+    return control?.invalid && (control?.dirty || control?.touched);
+  }
+
+  // --- LIGHTBOX ---
   openGallery(gallery: Gallery) {
     if (!gallery.images || gallery.images.length === 0) return;
     this.selectedGallery = gallery;
@@ -88,22 +147,16 @@ export class HomeComponent implements OnInit {
     document.body.style.overflow = 'auto';
   }
 
-  // FIX: Utilisation de 'any' au lieu de 'Event' pour éviter le conflit avec le modèle Event
   nextImage(e?: any) {
     e?.stopPropagation();
     if (!this.selectedGallery || !this.selectedGallery.images) return;
-    this.currentImageIndex = (this.currentImageIndex < this.selectedGallery.images.length - 1) 
-      ? this.currentImageIndex + 1 
-      : 0;
+    this.currentImageIndex = (this.currentImageIndex < this.selectedGallery.images.length - 1) ? this.currentImageIndex + 1 : 0;
   }
 
-  // FIX: Utilisation de 'any' au lieu de 'Event'
   prevImage(e?: any) {
     e?.stopPropagation();
     if (!this.selectedGallery || !this.selectedGallery.images) return;
-    this.currentImageIndex = (this.currentImageIndex > 0) 
-      ? this.currentImageIndex - 1 
-      : this.selectedGallery.images.length - 1;
+    this.currentImageIndex = (this.currentImageIndex > 0) ? this.currentImageIndex - 1 : this.selectedGallery.images.length - 1;
   }
 
   getCoverImage(event: Event): string {
@@ -113,9 +166,10 @@ export class HomeComponent implements OnInit {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if (!this.lightboxOpen) return;
-    if (event.key === 'Escape') this.closeLightbox();
-    else if (event.key === 'ArrowRight') this.nextImage();
-    else if (event.key === 'ArrowLeft') this.prevImage();
+    if (this.lightboxOpen) {
+      if (event.key === 'Escape') this.closeLightbox();
+      else if (event.key === 'ArrowRight') this.nextImage();
+      else if (event.key === 'ArrowLeft') this.prevImage();
+    }
   }
 }
