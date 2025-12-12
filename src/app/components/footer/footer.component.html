@@ -1,51 +1,64 @@
-<div class="bg-gray-900 text-white w-full border-t border-gray-800">
+<footer class="bg-gray-900 text-white w-full border-t border-gray-800 relative z-50 mt-auto" style="min-height: 300px; display: block;">
   
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
       
       <div class="space-y-4">
         <div class="flex items-center space-x-2">
-           <span class="text-2xl font-bold tracking-wider text-blue-500">
-             {{ (settings?.businessName || 'KYRANIS PARK') | uppercase }}
+           <img *ngIf="settings.header?.logoUrl" [src]="settings.header?.logoUrl" class="h-10 w-auto bg-white rounded p-1 object-contain" alt="Logo">
+           <span *ngIf="!settings.header?.logoUrl" class="text-2xl font-bold tracking-wider text-blue-500">
+             {{ (settings.businessName || 'KYRANIS PARK') | uppercase }}
            </span>
         </div>
         <p class="text-gray-400 text-sm leading-relaxed">
-          {{ settings?.homePageDescription || 'Votre évasion au cœur des îles.' }}
+          {{ settings.homePageDescription || 'Chargement...' | slice:0:150 }}...
         </p>
+        
+        <div class="flex space-x-4 pt-2" *ngIf="settings.facebookUrl">
+          <a [href]="settings.facebookUrl" target="_blank" class="text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-2">
+            <span class="text-xs font-medium border border-gray-600 px-2 py-1 rounded">Facebook</span>
+          </a>
+        </div>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Menu</h3>
+        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Navigation</h3>
         <ul class="space-y-3 text-sm">
-          <li><a routerLink="/" class="text-gray-400 hover:text-blue-400 no-underline">Accueil</a></li>
-          <li><a routerLink="/evenements" class="text-gray-400 hover:text-blue-400 no-underline">Agenda</a></li>
-          <li><a routerLink="/reservations" class="text-gray-400 hover:text-blue-400 no-underline">Réserver</a></li>
-          <li><a routerLink="/contact" class="text-gray-400 hover:text-blue-400 no-underline">Contact</a></li>
+          <li><a routerLink="/" class="text-gray-400 hover:text-blue-400 transition-colors no-underline">Accueil</a></li>
+          <li><a routerLink="/evenements" class="text-gray-400 hover:text-blue-400 transition-colors no-underline">Événements</a></li>
+          <li><a routerLink="/reservations" class="text-gray-400 hover:text-blue-400 transition-colors no-underline">Réserver</a></li>
+          <li><a routerLink="/contact" class="text-gray-400 hover:text-blue-400 transition-colors no-underline">Contact</a></li>
         </ul>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Infos</h3>
+        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Contact</h3>
         <ul class="space-y-4 text-sm">
           <li class="flex items-start">
             <span class="text-blue-500 mr-3">📍</span>
-            <span class="text-gray-300">{{ settings?.address || 'Zone Touristique' }}</span>
+            <span class="text-gray-300">{{ settings.address || 'Adresse' }}</span>
           </li>
           <li class="flex items-center">
             <span class="text-blue-500 mr-3">📞</span>
-            <a href="tel:{{ settings?.phone }}" class="text-white font-medium hover:text-blue-400 no-underline">{{ settings?.phone || '--' }}</a>
+            <a href="tel:{{ settings.phone }}" class="text-white font-medium hover:text-blue-400 transition-colors no-underline">
+              {{ settings.phone || 'Téléphone' }}
+            </a>
           </li>
           <li class="flex items-center">
             <span class="text-blue-500 mr-3">✉️</span>
-            <a href="mailto:{{ settings?.email }}" class="text-gray-300 hover:text-white no-underline">{{ settings?.email || '--' }}</a>
+            <a href="mailto:{{ settings.email }}" class="text-gray-300 hover:text-white transition-colors break-all no-underline">
+              {{ settings.email || 'Email' }}
+            </a>
           </li>
         </ul>
       </div>
     </div>
     
-    <div class="mt-12 pt-8 border-t border-gray-800 text-center text-xs text-gray-500">
-      <p>© {{ currentYear }} {{ settings?.businessName }}. Tous droits réservés.</p>
-      <a routerLink="/admin-login" class="mt-2 inline-block hover:text-white">Admin</a>
+    <div class="mt-12 pt-8 border-t border-gray-800 text-center flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
+      <p>© {{ currentYear }} {{ settings.businessName || 'Kyranis Park' }}. Tous droits réservés.</p>
+      <p class="mt-2 md:mt-0 opacity-50">
+        <a routerLink="/admin-login" class="hover:text-white underline">Admin</a>
+      </p>
     </div>
   </div>
-</div>
+</footer>

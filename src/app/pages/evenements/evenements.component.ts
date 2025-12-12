@@ -1,14 +1,20 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { FirestoreService } from '../../services/firestore.service';
 import { Event } from '../../models';
 
 type FilterType = 'all' | 'upcoming' | 'past';
 
+interface LightboxItem {
+  type: 'image' | 'video';
+  url: string;
+}
+
 @Component({
   selector: 'app-evenements',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, RouterModule],
   templateUrl: './evenements.component.html',
   styleUrls: ['./evenements.component.scss']
 })
@@ -23,7 +29,11 @@ export class EvenementsComponent implements OnInit {
   isLoading = true;
   selectedEvent: Event | null = null;
   isModalOpen = false;
-  lightboxImage: string | null = null;
+
+  // --- LOGIQUE LIGHTBOX AVANCÉE ---
+  isLightboxOpen = false;
+  lightboxItems: LightboxItem[] = [];
+  lightboxIndex = 0;
 
   constructor() {}
 
@@ -31,7 +41,6 @@ export class EvenementsComponent implements OnInit {
     this.firestoreService.getEvents().subscribe({
       next: (events) => {
         this.allEvents = events;
-        // On applique le filtre par défaut
         this.applyFilter('all'); 
         this.isLoading = false;
       },
@@ -45,8 +54,6 @@ export class EvenementsComponent implements OnInit {
   applyFilter(filter: FilterType): void {
     this.currentFilter = filter;
     
-    // FIX: On prend la date actuelle à Minuit (00:00:00)
-    // pour que les événements d'AUJOURD'HUI soient considérés comme "À venir"
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
@@ -67,6 +74,7 @@ export class EvenementsComponent implements OnInit {
     }
   }
 
+  // --- GESTION MODALE DÉTAILS ---
   openModal(event: Event): void {
     this.selectedEvent = event;
     this.isModalOpen = true;
@@ -79,6 +87,44 @@ export class EvenementsComponent implements OnInit {
     document.body.style.overflow = 'auto';
   }
 
+  // --- GESTION LIGHTBOX (GALERIE) ---
+  
+  openGalleryLightbox(index: number, images: string[] = [], videos: string[] = []) {
+    this.lightboxItems = [
+      ...images.map(url => ({ type: 'image' as const, url })),
+      ...videos.map(url => ({ type: 'video' as const, url }))
+    ];
+    
+    this.lightboxIndex = index;
+    this.isLightboxOpen = true;
+  }
+
+  closeLightbox() {
+    this.isLightboxOpen = false;
+    this.lightboxItems = [];
+  }
+
+  // CORRECTION ICI : Utilisation de 'any' pour éviter le conflit de type avec le modèle 'Event'
+  nextMedia(e?: any) {
+    if (e) e.stopPropagation();
+    if (this.lightboxIndex < this.lightboxItems.length - 1) {
+      this.lightboxIndex++;
+    } else {
+      this.lightboxIndex = 0; // Boucle
+    }
+  }
+
+  // CORRECTION ICI : Utilisation de 'any'
+  prevMedia(e?: any) {
+    if (e) e.stopPropagation();
+    if (this.lightboxIndex > 0) {
+      this.lightboxIndex--;
+    } else {
+      this.lightboxIndex = this.lightboxItems.length - 1; // Boucle
+    }
+  }
+
+  // --- HELPERS ---
   getCoverImage(event: Event): string {
     if (event.galleryImages && event.galleryImages.length > 0) {
       return event.galleryImages[0];
@@ -93,11 +139,17 @@ export class EvenementsComponent implements OnInit {
     return d < now;
   }
 
-  openLightbox(imgUrl: string): void {
-    this.lightboxImage = imgUrl;
-  }
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (this.isLightboxOpen) {
+      if (event.key === 'Escape') this.closeLightbox();
+      if (event.key === 'ArrowRight') this.nextMedia();
+      if (event.key === 'ArrowLeft') this.prevMedia();
+      return; 
+    }
 
-  closeLightbox(): void {
-    this.lightboxImage = null;
+    if (this.isModalOpen && event.key === 'Escape') {
+      this.closeModal();
+    }
   }
 }

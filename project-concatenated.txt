@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Fri Dec 12 14:43:09 CET 2025
+  Date: Fri Dec 12 19:05:57 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -28,6 +28,18 @@ Arborescence du projet:
 │   │   │   │   ├── manage-events.component.html
 │   │   │   │   ├── manage-events.component.scss
 │   │   │   │   └── manage-events.component.ts
+│   │   │   ├── manage-feedback
+│   │   │   │   ├── manage-feedback.component.html
+│   │   │   │   ├── manage-feedback.component.scss
+│   │   │   │   └── manage-feedback.component.ts
+│   │   │   ├── manage-gallery
+│   │   │   │   ├── manage-gallery.component.html
+│   │   │   │   ├── manage-gallery.component.scss
+│   │   │   │   └── manage-gallery.component.ts
+│   │   │   ├── manage-hero
+│   │   │   │   ├── manage-hero.component.html
+│   │   │   │   ├── manage-hero.component.scss
+│   │   │   │   └── manage-hero.component.ts
 │   │   │   ├── manage-reservations
 │   │   │   │   ├── manage-reservations.component.html
 │   │   │   │   ├── manage-reservations.component.scss
@@ -60,7 +72,9 @@ Arborescence du projet:
 │   │   └── admin.guard.ts
 │   ├── models
 │   │   ├── event.ts
+│   │   ├── feedback.ts
 │   │   ├── gallery.ts
+│   │   ├── hero-slide.ts
 │   │   ├── index.ts
 │   │   ├── reservation.ts
 │   │   └── settings.ts
@@ -110,7 +124,7 @@ Arborescence du projet:
 ├── sitemap.xml
 └── styles.scss
 
-25 directories, 79 files
+28 directories, 90 files
 
 ====================================
   FICHIERS SOURCE
@@ -119,41 +133,73 @@ Arborescence du projet:
 
 ====================================
 FICHIER: ./src/app/app.component.ts
-Lignes:       24
+Lignes:       56
 ====================================
 
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { RouterOutlet, RouterModule, Router, NavigationEnd } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { filter } from 'rxjs/operators';
+
+// Components
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, HeaderComponent, FooterComponent],
+  imports: [RouterOutlet, RouterModule, CommonModule, HeaderComponent, FooterComponent],
   template: `
-    <div class="flex flex-col min-h-screen">
-      <app-header></app-header>
+    <div class="flex flex-col min-h-screen relative bg-gray-50">
+      
+      <app-header *ngIf="!isHomePage"></app-header>
 
-      <main class="flex-grow pt-16"> <router-outlet></router-outlet>
+      <main class="flex-grow w-full" [class.pt-12]="!isHomePage"> 
+        <router-outlet></router-outlet>
       </main>
 
       <app-footer></app-footer>
+
+      <a *ngIf="!isHomePage"
+         routerLink="/" 
+         class="fixed bottom-6 left-6 z-[100] p-3 bg-white text-blue-600 rounded-full shadow-2xl border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 transform hover:scale-110 flex items-center justify-center group print:hidden cursor-pointer"
+         title="Retour à l'accueil">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      </a>
+
     </div>
   `,
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'kyranispark';
+  private router = inject(Router);
+  
+  // Variable réactive pour savoir si on est sur la home
+  isHomePage = false;
+
+  constructor() {
+    // Détection changement d'URL
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      // Vérifie si l'URL est la racine '/'
+      this.isHomePage = event.url === '/' || event.url === '/#';
+      
+      // Scroll en haut à chaque changement de page
+      window.scrollTo(0, 0);
+    });
+  }
 }
 
 ====================================
 FICHIER: ./src/app/app.config.ts
-Lignes:       48
+Lignes:       49
 ====================================
 
 import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
-import { provideRouter, withComponentInputBinding, withViewTransitions } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 
@@ -175,35 +221,36 @@ export const appConfig: ApplicationConfig = {
     // Optimisation Angular 18
     provideZoneChangeDetection({ eventCoalescing: true }),
     
-    // Router avec fonctionnalités modernes (Input Binding pour params, Transitions de vue)
+    // Router : Retrait de withViewTransitions() qui cause l'erreur InvalidStateError
     provideRouter(
       routes, 
-      withComponentInputBinding(), 
-      withViewTransitions()
+      withComponentInputBinding()
     ),
     
-    // Animations (Requis pour UI libraries)
+    // Animations
     provideAnimations(),
 
-    // HTTP Client (Pour Supabase interne ou API externes)
+    // HTTP Client
     provideHttpClient(),
 
     // --- FIREBASE INITIALIZATION ---
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     
     // Services Firebase
-    provideAuth(() => getAuth()),           // Authentification
-    provideFirestore(() => getFirestore()), // Base de données
-    provideStorage(() => getStorage()), provideServiceWorker('ngsw-worker.js', {
-            enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
-          })      // Stockage (Optionnel si Supabase utilisé)
+    provideAuth(() => getAuth()),           
+    provideFirestore(() => getFirestore()), 
+    provideStorage(() => getStorage()), 
+    
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ]
 };
 
 ====================================
 FICHIER: ./src/app/app.routes.ts
-Lignes:       56
+Lignes:       68
 ====================================
 
 import { Routes } from '@angular/router';
@@ -211,7 +258,7 @@ import { adminGuard } from './guards/admin.guard';
 import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
 
 export const routes: Routes = [
-  // --- ROUTES PUBLIQUES (Lazy Loaded) ---
+  // --- ROUTES PUBLIQUES ---
   { 
     path: '', 
     loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) 
@@ -233,7 +280,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent) 
   },
 
-  // --- ADMIN ROUTES (Lazy Loaded Children) ---
+  // --- ADMIN ROUTES ---
   { 
     path: 'admin', 
     loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
@@ -253,13 +300,25 @@ export const routes: Routes = [
         loadComponent: () => import('./components/admin-dashboard/manage-reservations/manage-reservations.component').then(m => m.ManageReservationsComponent) 
       },
       { 
+        path: 'gallery', 
+        loadComponent: () => import('./components/admin-dashboard/manage-gallery/manage-gallery.component').then(m => m.ManageGalleryComponent) 
+      },
+      { 
+        path: 'hero', 
+        loadComponent: () => import('./components/admin-dashboard/manage-hero/manage-hero.component').then(m => m.ManageHeroComponent) 
+      },
+      // NOUVELLE ROUTE FEEDBACK
+      { 
+        path: 'feedback', 
+        loadComponent: () => import('./components/admin-dashboard/manage-feedback/manage-feedback.component').then(m => m.ManageFeedbackComponent) 
+      },
+      { 
         path: 'settings', 
         loadComponent: () => import('./components/admin-dashboard/settings/settings.component').then(m => m.SettingsComponent) 
       }
     ]
   },
 
-  // --- 404 ---
   { path: '**', component: PageNotFoundComponent }
 ];
 
@@ -283,28 +342,42 @@ export class App {
 
 ====================================
 FICHIER: ./src/app/components/admin-dashboard/admin-dashboard.component.ts
-Lignes:       30
+Lignes:       44
 ====================================
 
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router'; // Import RouterModule
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { FirestoreService } from '../../services/firestore.service';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { User } from '@angular/fire/auth';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule], // Ajout RouterModule pour <router-outlet>
+  imports: [CommonModule, RouterModule],
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.scss']
 })
 export class AdminDashboardComponent {
   private authService = inject(AuthService);
+  private firestoreService = inject(FirestoreService);
   private router = inject(Router);
 
   currentUser$: Observable<User | null> = this.authService.getCurrentUser();
+  
+  // Compte uniquement les réservations 'pending' (En attente) pour la notification
+  reservationCount$: Observable<number> = this.firestoreService.getReservations().pipe(
+    map(reservations => reservations.filter(r => r.status === 'pending').length)
+  );
+
+  // Compte tous les événements
+  eventCount$: Observable<number> = this.firestoreService.getEvents().pipe(
+    map(events => events.length)
+  );
+
   isSidebarOpen = false;
 
   toggleSidebar() {
@@ -319,14 +392,14 @@ export class AdminDashboardComponent {
 
 ====================================
 FICHIER: ./src/app/components/admin-dashboard/dashboard-stats/dashboard-stats.component.ts
-Lignes:      146
+Lignes:      148
 ====================================
 
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FirestoreService } from '../../../services/firestore.service';
 import { forkJoin } from 'rxjs';
-import { map, take } from 'rxjs/operators';
+import { take } from 'rxjs/operators';
 import { Event, Reservation, Gallery } from '../../../models';
 
 @Component({
@@ -338,7 +411,6 @@ import { Event, Reservation, Gallery } from '../../../models';
 })
 export class DashboardStatsComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
-
   isLoading = true;
 
   stats = {
@@ -416,10 +488,10 @@ export class DashboardStatsComponent implements OnInit {
       confirmed,
       cancelled
     };
-    
+
     const maxRev = Math.max(...monthlyData, 1);
     const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-    
+
     this.stats.revenue = {
       total: totalRev,
       monthly: monthlyData.map((amount, index) => ({
@@ -431,7 +503,10 @@ export class DashboardStatsComponent implements OnInit {
   }
 
   processEvents(events: Event[]) {
+    // FIX: Utilisation de minuit pour inclure aujourd'hui
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
     let upcoming = 0;
     let past = 0;
 
@@ -689,6 +764,387 @@ export class ManageEventsComponent implements OnInit {
 }
 
 ====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-feedback/manage-feedback.component.ts
+Lignes:       62
+====================================
+
+import { Component, inject } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { FirestoreService } from '../../../services/firestore.service';
+import { Feedback, FeedbackStatus } from '../../../models';
+import { Observable } from 'rxjs';
+
+@Component({
+  selector: 'app-manage-feedback',
+  standalone: true,
+  imports: [CommonModule, DatePipe],
+  templateUrl: './manage-feedback.component.html',
+  styleUrls: ['./manage-feedback.component.scss']
+})
+export class ManageFeedbackComponent {
+  private firestoreService = inject(FirestoreService);
+
+  feedbacks$: Observable<Feedback[]> = this.firestoreService.getAllFeedbacks();
+  
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' = 'success';
+
+  getStatusClass(status: string): string {
+    switch(status) {
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-yellow-100 text-yellow-800';
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    switch(status) {
+      case 'approved': return 'Publié';
+      case 'rejected': return 'Refusé';
+      default: return 'En attente';
+    }
+  }
+
+  async updateStatus(id: string, status: FeedbackStatus) {
+    try {
+      await this.firestoreService.updateFeedbackStatus(id, status);
+      this.showToast(`Avis ${status === 'approved' ? 'validé' : 'refusé'}`, 'success');
+    } catch (e) {
+      this.showToast('Erreur mise à jour', 'error');
+    }
+  }
+
+  async deleteFeedback(id: string) {
+    if(!confirm('Supprimer définitivement cet avis ?')) return;
+    try {
+      await this.firestoreService.deleteFeedback(id);
+      this.showToast('Avis supprimé', 'success');
+    } catch (e) {
+      this.showToast('Erreur suppression', 'error');
+    }
+  }
+
+  showToast(msg: string, type: 'success' | 'error') {
+    this.toastMessage = msg;
+    this.toastType = type;
+    setTimeout(() => this.toastMessage = null, 3000);
+  }
+}
+
+====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-gallery/manage-gallery.component.ts
+Lignes:      186
+====================================
+
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FirestoreService } from '../../../services/firestore.service';
+import { SupabaseService } from '../../../services/supabase.service';
+import { Gallery } from '../../../models';
+
+@Component({
+  selector: 'app-manage-gallery',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './manage-gallery.component.html',
+  styleUrls: ['./manage-gallery.component.scss']
+})
+export class ManageGalleryComponent implements OnInit {
+  private firestoreService = inject(FirestoreService);
+  private supabaseService = inject(SupabaseService);
+  private fb = inject(FormBuilder);
+
+  galleries: Gallery[] = [];
+  
+  isModalOpen = false;
+  isSubmitting = false;
+  isUploading = false;
+  
+  currentGalleryId: string | null = null;
+  galleryForm: FormGroup;
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' = 'success';
+
+  constructor() {
+    this.galleryForm = this.fb.group({
+      name: ['', Validators.required],
+      category: ['park', Validators.required], // Défaut 'park' pour l'accueil
+      images: [[]],
+      videos: [[]] // Pour futur usage
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadGalleries();
+  }
+
+  loadGalleries() {
+    // On charge spécifiquement les galeries 'park' car c'est la demande principale (Notre Galerie)
+    // Mais on peut enlever le filtre pour tout voir.
+    this.firestoreService.getGalleries('park').subscribe({
+      next: (data) => {
+        this.galleries = data;
+      },
+      error: (e) => this.showToast('Erreur chargement galeries', 'error')
+    });
+  }
+
+  openCreateModal() {
+    this.currentGalleryId = null;
+    this.galleryForm.reset({ 
+      name: '', 
+      category: 'park', 
+      images: [], 
+      videos: [] 
+    });
+    this.isModalOpen = true;
+  }
+
+  openEditModal(gallery: Gallery) {
+    this.currentGalleryId = gallery.galleryId || null;
+    this.galleryForm.patchValue({
+      name: gallery.name,
+      category: gallery.category,
+      images: gallery.images || [],
+      videos: gallery.videos || []
+    });
+    this.isModalOpen = true;
+  }
+
+  closeModal() {
+    this.isModalOpen = false;
+  }
+
+  // --- GESTION SUPABASE ---
+
+  async handleFileUpload(event: any) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    this.isUploading = true;
+    const currentUrls = this.galleryForm.get('images')?.value || [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Upload vers dossier 'gallery'
+        const result = await this.supabaseService.uploadImage(file, 'gallery');
+        currentUrls.push(result.url);
+      }
+      
+      this.galleryForm.patchValue({ images: currentUrls });
+      this.showToast('Images ajoutées avec succès', 'success');
+    } catch (error) {
+      console.error(error);
+      this.showToast('Erreur upload Supabase', 'error');
+    } finally {
+      this.isUploading = false;
+      event.target.value = '';
+    }
+  }
+
+  async removeImage(url: string) {
+    if (!confirm('Supprimer cette image définitivement (Supabase & Base de données) ?')) return;
+
+    try {
+      // 1. Suppression physique chez Supabase
+      await this.supabaseService.deleteFileByUrl(url);
+
+      // 2. Mise à jour du formulaire local
+      const currentUrls = this.galleryForm.get('images')?.value || [];
+      const newUrls = currentUrls.filter((u: string) => u !== url);
+      this.galleryForm.patchValue({ images: newUrls });
+
+      // 3. Si on est en mode édition, on sauvegarde tout de suite pour synchroniser Firestore
+      if (this.currentGalleryId) {
+        await this.saveGallery(true); // true = silent save (pas de fermeture modal)
+      } else {
+        this.showToast('Image supprimée (pensez à sauvegarder l\'album)', 'success');
+      }
+
+    } catch (error) {
+      console.error(error);
+      this.showToast('Erreur lors de la suppression', 'error');
+    }
+  }
+
+  // --- CRUD FIRESTORE ---
+
+  async saveGallery(silent = false) {
+    if (this.galleryForm.invalid) return;
+
+    this.isSubmitting = true;
+    const formData = this.galleryForm.value;
+    
+    // Objet Gallery
+    const galleryData: any = {
+      name: formData.name,
+      category: formData.category,
+      images: formData.images,
+      videos: formData.videos
+    };
+
+    try {
+      if (this.currentGalleryId) {
+        await this.firestoreService.updateGallery(this.currentGalleryId, galleryData);
+        if(!silent) this.showToast('Album mis à jour', 'success');
+      } else {
+        await this.firestoreService.addGallery(galleryData);
+        if(!silent) this.showToast('Album créé', 'success');
+      }
+      
+      if (!silent) {
+        this.closeModal();
+        // Pas besoin de recharger loadGalleries() car c'est un Observable en temps réel via firestoreService
+      }
+    } catch (error) {
+      this.showToast('Erreur sauvegarde', 'error');
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async confirmDelete(galleryId: string) {
+    if(!confirm('Voulez-vous supprimer cet album complet ? Les images ne seront pas supprimées de Supabase automatiquement ici (sauf implémentation avancée).')) return;
+    
+    try {
+      await this.firestoreService.deleteGallery(galleryId);
+      this.showToast('Album supprimé', 'success');
+    } catch (e) {
+      this.showToast('Erreur suppression', 'error');
+    }
+  }
+
+  showToast(msg: string, type: 'success' | 'error') {
+    this.toastMessage = msg;
+    this.toastType = type;
+    setTimeout(() => this.toastMessage = null, 3000);
+  }
+}
+
+====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-hero/manage-hero.component.ts
+Lignes:      115
+====================================
+
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FirestoreService } from '../../../services/firestore.service';
+import { SupabaseService } from '../../../services/supabase.service';
+import { HeroSlide } from '../../../models';
+import { Observable } from 'rxjs';
+
+@Component({
+  selector: 'app-manage-hero',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './manage-hero.component.html',
+  styleUrls: ['./manage-hero.component.scss']
+})
+export class ManageHeroComponent {
+  private firestoreService = inject(FirestoreService);
+  private supabaseService = inject(SupabaseService);
+  private fb = inject(FormBuilder);
+
+  slides$: Observable<HeroSlide[]> = this.firestoreService.getHeroSlides();
+  
+  slideForm: FormGroup;
+  previewUrl: string | null = null;
+  uploadedFileUrl: string | null = null;
+  
+  isUploading = false;
+  isSubmitting = false;
+  toastMessage: string | null = null;
+  toastType: 'success' | 'error' = 'success';
+
+  constructor() {
+    this.slideForm = this.fb.group({
+      title: ['', Validators.required],
+      subtitle: ['', Validators.required]
+    });
+  }
+
+  async handleFileUpload(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    this.isUploading = true;
+    
+    // Preview immédiate
+    const reader = new FileReader();
+    reader.onload = (e: any) => this.previewUrl = e.target.result;
+    reader.readAsDataURL(file);
+
+    try {
+      const result = await this.supabaseService.uploadImage(file, 'hero');
+      this.uploadedFileUrl = result.url;
+      this.showToast('Image uploadée !', 'success');
+    } catch (error) {
+      console.error(error);
+      this.showToast('Erreur upload', 'error');
+      this.previewUrl = null;
+    } finally {
+      this.isUploading = false;
+    }
+  }
+
+  async addSlide() {
+    if (this.slideForm.invalid || !this.uploadedFileUrl) return;
+
+    this.isSubmitting = true;
+    const { title, subtitle } = this.slideForm.value;
+
+    const newSlide: HeroSlide = {
+      imageUrl: this.uploadedFileUrl,
+      title,
+      subtitle,
+      createdAt: new Date()
+    };
+
+    try {
+      await this.firestoreService.addHeroSlide(newSlide);
+      this.showToast('Slide ajoutée !', 'success');
+      this.resetForm();
+    } catch (error) {
+      this.showToast('Erreur sauvegarde', 'error');
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+
+  async deleteSlide(slide: HeroSlide) {
+    if(!slide.id || !confirm('Supprimer cette slide ?')) return;
+
+    try {
+      // Suppression de l'image sur Supabase (clean up)
+      if (slide.imageUrl) {
+        await this.supabaseService.deleteFileByUrl(slide.imageUrl).catch(e => console.log('Supabase file not found or error', e));
+      }
+      
+      // Suppression Firestore
+      await this.firestoreService.deleteHeroSlide(slide.id);
+      this.showToast('Slide supprimée', 'success');
+    } catch (error) {
+      this.showToast('Erreur suppression', 'error');
+    }
+  }
+
+  resetForm() {
+    this.slideForm.reset();
+    this.previewUrl = null;
+    this.uploadedFileUrl = null;
+  }
+
+  showToast(msg: string, type: 'success' | 'error') {
+    this.toastMessage = msg;
+    this.toastType = type;
+    setTimeout(() => this.toastMessage = null, 3000);
+  }
+}
+
+====================================
 FICHIER: ./src/app/components/admin-dashboard/manage-reservations/manage-reservations.component.ts
 Lignes:      196
 ====================================
@@ -892,13 +1348,14 @@ export class ManageReservationsComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/components/admin-dashboard/settings/settings.component.ts
-Lignes:      102
+Lignes:      143
 ====================================
 
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { FirestoreService } from '../../../services/firestore.service';
+import { SupabaseService } from '../../../services/supabase.service';
 
 @Component({
   selector: 'app-settings',
@@ -909,25 +1366,38 @@ import { FirestoreService } from '../../../services/firestore.service';
 })
 export class SettingsComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
+  private supabaseService = inject(SupabaseService);
   private fb = inject(FormBuilder);
 
   settingsForm: FormGroup;
   isLoading = true;
   isSaving = false;
+  isUploadingLogo = false; // État upload
+  
   toastMessage: string | null = null;
   toastType: 'success' | 'error' = 'success';
 
   constructor() {
     this.settingsForm = this.fb.group({
-      businessName: ['Kyranis Park', Validators.required],
+      businessName: ['Kyranis Park'],
       address: [''],
-      phone: ['+216 28 417 822', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      phone: ['+216 28 417 822'],
+      email: [''],
       facebookUrl: [''],
       homePageDescription: [''],
       parkDescription: [''],
       googleMapsEmbed: [''],
       openingHours: ['Du Lundi au Dimanche, 09h - 22h'],
+      
+      header: this.fb.group({
+        logoText: ['KYRANIS PARK'],
+        logoUrl: [''], // Champ caché pour l'URL de l'image
+        menuHome: ['Accueil'],
+        menuEvents: ['Événements'],
+        menuReservations: ['Réservations'],
+        menuContact: ['Contact']
+      }),
+
       boatPrices: this.fb.group({
         flouka: [150],
         speed_boat: [400],
@@ -964,13 +1434,40 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  async onSubmit() {
-    if (this.settingsForm.invalid) {
-      this.settingsForm.markAllAsTouched();
-      this.showToast('Veuillez vérifier les champs requis', 'error');
-      return;
-    }
+  // --- LOGO UPLOAD ---
+  async handleLogoUpload(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
 
+    this.isUploadingLogo = true;
+    try {
+      // Upload vers un dossier 'settings'
+      const result = await this.supabaseService.uploadImage(file, 'settings');
+      
+      // Mise à jour du formulaire avec l'URL
+      this.settingsForm.get('header')?.patchValue({
+        logoUrl: result.url
+      });
+      
+      this.showToast('Logo téléchargé avec succès', 'success');
+    } catch (error) {
+      console.error(error);
+      this.showToast('Erreur upload logo', 'error');
+    } finally {
+      this.isUploadingLogo = false;
+    }
+  }
+
+  removeLogo() {
+    if(confirm('Supprimer le logo et revenir au texte seul ?')) {
+      this.settingsForm.get('header')?.patchValue({
+        logoUrl: ''
+      });
+    }
+  }
+
+  // --- SAVE ---
+  async onSubmit() {
     this.isSaving = true;
     const formData = this.settingsForm.value;
 
@@ -1000,12 +1497,14 @@ export class SettingsComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/components/footer/footer.component.ts
-Lignes:       14
+Lignes:       49
 ====================================
 
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { FirestoreService } from '../../services/firestore.service';
+import { AppSettings } from '../../models';
 
 @Component({
   selector: 'app-footer',
@@ -1014,8 +1513,41 @@ import { RouterModule } from '@angular/router';
   templateUrl: './footer.component.html',
   styleUrls: ['./footer.component.scss']
 })
-export class FooterComponent {
+export class FooterComponent implements OnInit {
+  private firestoreService = inject(FirestoreService);
+  
   currentYear: number = new Date().getFullYear();
+
+  // Variable publique utilisée directement dans le HTML
+  settings: AppSettings = {
+    businessName: 'Kyranis Park',
+    address: 'Zone Touristique, Kerkennah',
+    phone: '+216 28 417 822',
+    email: 'contact@kyranispark.tn',
+    facebookUrl: '',
+    homePageDescription: 'Bienvenue',
+    parkDescription: '',
+    googleMapsEmbed: '',
+    header: {
+      logoText: 'KYRANIS PARK',
+      menuHome: 'Accueil',
+      menuEvents: 'Événements',
+      menuReservations: 'Réservations',
+      menuContact: 'Contact'
+    }
+  };
+
+  ngOnInit() {
+    this.firestoreService.getSettings().subscribe({
+      next: (data) => {
+        if (data) {
+          // Fusion pour garder les valeurs par défaut si certaines manquent
+          this.settings = { ...this.settings, ...data };
+        }
+      },
+      error: (err) => console.error('Erreur chargement footer', err)
+    });
+  }
 }
 
 ====================================
@@ -1112,15 +1644,17 @@ export class GalleryComponent implements OnChanges {
 
 ====================================
 FICHIER: ./src/app/components/header/header.component.ts
-Lignes:       39
+Lignes:       70
 ====================================
 
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FirebaseService } from '../../services/firebase.service';
+import { FirestoreService } from '../../services/firestore.service';
 import { Observable } from 'rxjs';
 import { User } from '@angular/fire/auth';
+import { AppSettings } from '../../models';
 
 @Component({
   selector: 'app-header',
@@ -1129,15 +1663,44 @@ import { User } from '@angular/fire/auth';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss']
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   private firebaseService = inject(FirebaseService);
+  private firestoreService = inject(FirestoreService);
   private router = inject(Router);
 
-  // État de l'utilisateur (null si pas connecté)
   user$: Observable<User | null> = this.firebaseService.user$;
-  
-  // État du menu mobile
   isMenuOpen = false;
+
+  // Données par défaut IMMÉDIATES (plus d'attente)
+  settings: AppSettings = {
+    businessName: 'Kyranis Park',
+    address: '',
+    phone: '',
+    email: '',
+    facebookUrl: '',
+    homePageDescription: '',
+    parkDescription: '',
+    googleMapsEmbed: '',
+    header: {
+      logoText: 'KYRANIS PARK',
+      menuHome: 'Accueil',
+      menuEvents: 'Événements',
+      menuReservations: 'Réservations',
+      menuContact: 'Contact'
+    }
+  };
+
+  ngOnInit() {
+    // Chargement non-bloquant
+    this.firestoreService.getSettings().subscribe({
+      next: (data) => {
+        if (data) {
+          this.settings = { ...this.settings, ...data };
+        }
+      },
+      error: (err) => console.error('Erreur chargement header', err)
+    });
+  }
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;
@@ -1157,23 +1720,20 @@ export class HeaderComponent {
 
 ====================================
 FICHIER: ./src/app/components/hero-slider/hero-slider.component.ts
-Lignes:      125
+Lignes:      121
 ====================================
 
-import { Component, OnInit, OnDestroy, HostListener, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterModule } from '@angular/router'; // AJOUT IMPORTANT
 import { trigger, transition, style, animate, query, group } from '@angular/animations';
-
-interface Slide {
-  image: string;
-  title: string;
-  subtitle: string;
-}
+import { FirestoreService } from '../../services/firestore.service';
+import { HeroSlide } from '../../models';
 
 @Component({
   selector: 'app-hero-slider',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule], // AJOUT DANS LES IMPORTS
   templateUrl: './hero-slider.component.html',
   styleUrls: ['./hero-slider.component.scss'],
   animations: [
@@ -1204,29 +1764,13 @@ interface Slide {
   ]
 })
 export class HeroSliderComponent implements OnInit, OnDestroy {
-  slides: Slide[] = [
-    {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1765513253/search_images/1ae70ea58b03bdb7ef99b684e9f870dd1c50316a.jpg',
-      title: 'Bienvenue à Kyranis Park',
-      subtitle: 'L\'évasion au cœur des îles Kerkennah'
-    },
-    {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1765513254/search_images/767fece22dcfe0ef399c8e99d9ed66a010bd6e11.jpg',
-      title: 'Des Moments Inoubliables',
-      subtitle: 'Célébrez vos événements dans un cadre unique'
-    },
-    {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1763880066/search_images/f9a3f2ffd5ad5d033ed42d88e8eb078c1dc7cd6b.jpg',
-      title: 'Excursions en Bateau',
-      subtitle: 'Découvrez la beauté maritime de l\'archipel'
-    },
-    {
-      image: 'https://pplx-res.cloudinary.com/image/upload/v1765513253/search_images/1e914eb0d27d61e234de07e9b6554c6b5420ea47.jpg',
-      title: 'Gastronomie & Détente',
-      subtitle: 'Savourez la vie au bord de l\'eau'
-    }
+  private firestoreService = inject(FirestoreService);
+
+  defaultSlides: HeroSlide[] = [
+
   ];
 
+  slides: HeroSlide[] = [...this.defaultSlides];
   currentIndex = 0;
   intervalId: any;
   scrollY = 0;
@@ -1237,6 +1781,19 @@ export class HeroSliderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.firestoreService.getHeroSlides().subscribe({
+      next: (data) => {
+        if (data && data.length > 0) {
+          this.slides = data;
+          if (this.currentIndex >= this.slides.length) {
+            this.currentIndex = 0;
+          }
+        }
+        this.resetTimer();
+      },
+      error: (err) => console.error(err)
+    });
+
     this.startAutoPlay();
   }
 
@@ -1271,11 +1828,13 @@ export class HeroSliderComponent implements OnInit, OnDestroy {
   }
 
   nextSlide() {
+    if (!this.slides || this.slides.length === 0) return;
     this.currentIndex = (this.currentIndex + 1) % this.slides.length;
     this.resetTimer();
   }
 
   prevSlide() {
+    if (!this.slides || this.slides.length === 0) return;
     this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
     this.resetTimer();
   }
@@ -1363,6 +1922,22 @@ export interface Event {
 }
 
 ====================================
+FICHIER: ./src/app/models/feedback.ts
+Lignes:       10
+====================================
+
+export type FeedbackStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Feedback {
+  id?: string;
+  name: string;
+  message: string;
+  rating: number; // 1 à 5
+  status: FeedbackStatus;
+  createdAt: Date;
+}
+
+====================================
 FICHIER: ./src/app/models/gallery.ts
 Lignes:       20
 ====================================
@@ -1389,14 +1964,29 @@ export interface Gallery {
 }
 
 ====================================
+FICHIER: ./src/app/models/hero-slide.ts
+Lignes:        7
+====================================
+
+export interface HeroSlide {
+  id?: string;
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  createdAt: Date;
+}
+
+====================================
 FICHIER: ./src/app/models/index.ts
-Lignes:        4
+Lignes:        6
 ====================================
 
 export * from './event';
 export * from './reservation';
 export * from './settings';
 export * from './gallery';
+export * from './hero-slide';
+export * from './feedback';
 
 ====================================
 FICHIER: ./src/app/models/reservation.ts
@@ -1446,12 +2036,11 @@ export interface Reservation {
 
 ====================================
 FICHIER: ./src/app/models/settings.ts
-Lignes:       17
+Lignes:       24
 ====================================
 
 /**
- * Interface pour la collection 'settings' (document unique généralement).
- * Contient les informations globales du site.
+ * Interface pour la collection 'settings'.
  */
 export interface AppSettings {
   businessName: string;
@@ -1460,11 +2049,19 @@ export interface AppSettings {
   email: string;
   facebookUrl: string;
   
-  /** Code HTML de l'iframe Google Maps ou URL */
   googleMapsEmbed: string;
-  
   homePageDescription: string;
   parkDescription: string;
+
+  // Config Header
+  header?: {
+    logoText: string;
+    logoUrl?: string; // NOUVEAU: URL de l'image
+    menuHome: string;
+    menuEvents: string;
+    menuReservations: string;
+    menuContact: string;
+  };
 }
 
 ====================================
@@ -1633,14 +2230,13 @@ export class ContactComponent {
 
 ====================================
 FICHIER: ./src/app/pages/evenements/evenements.component.ts
-Lignes:      118
+Lignes:      103
 ====================================
 
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FirestoreService } from '../../services/firestore.service';
 import { Event } from '../../models';
-import { Observable, map, tap } from 'rxjs';
 
 type FilterType = 'all' | 'upcoming' | 'past';
 
@@ -1654,34 +2250,24 @@ type FilterType = 'all' | 'upcoming' | 'past';
 export class EvenementsComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
 
-  // Données brutes
+  // Données
   allEvents: Event[] = [];
-  
-  // Données filtrées pour l'affichage
   filteredEvents: Event[] = [];
-  
-  // État du filtre
   currentFilter: FilterType = 'all';
   
-  // État du chargement
   isLoading = true;
-
-  // État de la Modal Détail
   selectedEvent: Event | null = null;
   isModalOpen = false;
-
-  // État de la Lightbox (Zoom image dans le modal)
   lightboxImage: string | null = null;
 
   constructor() {}
 
   ngOnInit(): void {
-    // On charge tous les événements une seule fois et on filtre côté client
-    // car le volume n'est pas énorme
     this.firestoreService.getEvents().subscribe({
       next: (events) => {
         this.allEvents = events;
-        this.applyFilter('all'); // Défaut: tous
+        // On applique le filtre par défaut
+        this.applyFilter('all'); 
         this.isLoading = false;
       },
       error: (err) => {
@@ -1691,35 +2277,35 @@ export class EvenementsComponent implements OnInit {
     });
   }
 
-  /**
-   * Applique le filtre (Tout, À venir, Passés)
-   */
   applyFilter(filter: FilterType): void {
     this.currentFilter = filter;
+    
+    // FIX: On prend la date actuelle à Minuit (00:00:00)
+    // pour que les événements d'AUJOURD'HUI soient considérés comme "À venir"
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
 
     if (filter === 'all') {
       this.filteredEvents = [...this.allEvents];
     } else if (filter === 'upcoming') {
-      // Événements futurs (date >= maintenant)
-      this.filteredEvents = this.allEvents.filter(e => e.date >= now);
-      // Tri: du plus proche au plus lointain
-      this.filteredEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+      this.filteredEvents = this.allEvents.filter(e => {
+        const d = e.date instanceof Date ? e.date : new Date(e.date);
+        return d >= now;
+      });
+      this.filteredEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     } else if (filter === 'past') {
-      // Événements passés
-      this.filteredEvents = this.allEvents.filter(e => e.date < now);
-      // Tri: du plus récent au plus vieux
-      this.filteredEvents.sort((a, b) => b.date.getTime() - a.date.getTime());
+      this.filteredEvents = this.allEvents.filter(e => {
+        const d = e.date instanceof Date ? e.date : new Date(e.date);
+        return d < now;
+      });
+      this.filteredEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
   }
 
-  /**
-   * Gestion de la Modal Détails
-   */
   openModal(event: Event): void {
     this.selectedEvent = event;
     this.isModalOpen = true;
-    document.body.style.overflow = 'hidden'; // Bloque le scroll body
+    document.body.style.overflow = 'hidden';
   }
 
   closeModal(): void {
@@ -1728,24 +2314,20 @@ export class EvenementsComponent implements OnInit {
     document.body.style.overflow = 'auto';
   }
 
-  /**
-   * Helpers d'affichage
-   */
   getCoverImage(event: Event): string {
     if (event.galleryImages && event.galleryImages.length > 0) {
       return event.galleryImages[0];
     }
-    // Placeholder si pas d'image
     return 'https://via.placeholder.com/800x600?text=Kyranis+Park';
   }
 
   isEventPast(event: Event): boolean {
-    return event.date < new Date();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const d = event.date instanceof Date ? event.date : new Date(event.date);
+    return d < now;
   }
 
-  /**
-   * Lightbox Interne au Modal
-   */
   openLightbox(imgUrl: string): void {
     this.lightboxImage = imgUrl;
   }
@@ -1757,85 +2339,182 @@ export class EvenementsComponent implements OnInit {
 
 ====================================
 FICHIER: ./src/app/pages/home/home.component.ts
-Lignes:       78
+Lignes:      175
 ====================================
 
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, HostListener } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
-// Services & Models
 import { FirestoreService } from '../../services/firestore.service';
-import { AppSettings, Gallery } from '../../models';
-
-// Components
+import { AppSettings, Gallery, Event, Feedback } from '../../models';
 import { HeroSliderComponent } from '../../components/hero-slider/hero-slider.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, HeroSliderComponent],
+  imports: [CommonModule, RouterModule, HeroSliderComponent, DatePipe, ReactiveFormsModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
+  private fb = inject(FormBuilder);
 
-  // Streams de données
+  // Données principales
   settings$: Observable<AppSettings> = this.firestoreService.getSettings();
-  
-  // On récupère les galeries 'park' et on extrait une liste plate d'images (max 8)
-  parkImages$: Observable<string[]> = this.firestoreService.getGalleries('park').pipe(
-    map((galleries: Gallery[]) => {
-      // Aplatir les tableaux d'images de toutes les galeries trouvées
-      const allImages = galleries.flatMap(g => g.images);
-      // Retourner les 8 premières pour la grille
-      return allImages.slice(0, 8);
+  parkGalleries$: Observable<Gallery[]> = this.firestoreService.getGalleries('park');
+  upcomingEvents$: Observable<Event[]> = this.firestoreService.getEvents().pipe(
+    map(events => {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      return events
+        .filter(e => {
+          const d = e.date instanceof Date ? e.date : new Date(e.date);
+          return d >= now;
+        })
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(0, 3);
     })
   );
 
-  // Mock Témoignages
-  testimonials = [
-    {
-      name: 'Sarah M.',
-      role: 'Visiteuse',
-      text: 'Une journée inoubliable ! Le coucher de soleil sur le bateau était magique. L\'équipe est aux petits soins.',
-      rating: 5
-    },
-    {
-      name: 'Ahmed K.',
-      role: 'Organisateur Événement',
-      text: 'Nous avons organisé notre séminaire d\'entreprise ici. Le cadre est inspirant et les services parfaits.',
-      rating: 5
-    },
-    {
-      name: 'Famille Tounsi',
-      role: 'Vacances',
-      text: 'Les enfants ont adoré le parc et nous la tranquillité. La cuisine locale est délicieuse.',
-      rating: 4
-    }
-  ];
+  // AVIS CLIENTS
+  approvedFeedbacks$: Observable<Feedback[]> = this.firestoreService.getApprovedFeedbacks(3);
 
-  // Gestion Lightbox
+  // LOGIQUE FEEDBACK & CAPTCHA
+  isFeedbackModalOpen = false;
+  feedbackForm: FormGroup;
+  isSubmittingFeedback = false;
+  captchaA = 0;
+  captchaB = 0;
+  captchaAnswer = 0;
+  
+  stars: number[] = [1, 2, 3, 4, 5];
+
+  // LOGIQUE LIGHTBOX
   lightboxOpen = false;
-  currentImage: string | null = null;
+  selectedGallery: Gallery | null = null;
+  currentImageIndex = 0;
 
-  constructor() {}
+  constructor() {
+    this.feedbackForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      message: ['', [Validators.required, Validators.minLength(10)]],
+      rating: [5, Validators.required],
+      captcha: ['', Validators.required]
+    });
+  }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.generateCaptcha();
+  }
 
-  openLightbox(imageUrl: string) {
-    this.currentImage = imageUrl;
+  // --- FEEDBACK & CAPTCHA ---
+
+  generateCaptcha() {
+    this.captchaA = Math.floor(Math.random() * 10) + 1;
+    this.captchaB = Math.floor(Math.random() * 10) + 1;
+    this.captchaAnswer = this.captchaA + this.captchaB;
+    this.feedbackForm.get('captcha')?.setValue('');
+  }
+
+  openFeedbackModal() {
+    this.isFeedbackModalOpen = true;
+    this.generateCaptcha();
+  }
+
+  closeFeedbackModal() {
+    this.isFeedbackModalOpen = false;
+    this.feedbackForm.reset({ rating: 5 });
+  }
+
+  setRating(rating: number) {
+    this.feedbackForm.patchValue({ rating: rating });
+  }
+
+  async submitFeedback() {
+    // MODIFICATION ICI: Si invalide, on affiche les erreurs (rouge) au lieu de bloquer silencieusement
+    if (this.feedbackForm.invalid) {
+      this.feedbackForm.markAllAsTouched();
+      return;
+    }
+
+    const userAnswer = parseInt(this.feedbackForm.get('captcha')?.value, 10);
+    if (userAnswer !== this.captchaAnswer) {
+      alert(`Calcul incorrect (${this.captchaA} + ${this.captchaB}). Veuillez réessayer.`);
+      // On ne régénère pas forcément tout de suite pour laisser l'utilisateur corriger
+      return;
+    }
+
+    this.isSubmittingFeedback = true;
+    const { name, message, rating } = this.feedbackForm.value;
+
+    try {
+      await this.firestoreService.addFeedback({
+        name,
+        message,
+        rating: parseInt(rating, 10),
+      });
+      
+      alert('Merci ! Votre avis a été envoyé et sera publié après validation.');
+      this.closeFeedbackModal();
+    } catch (e) {
+      console.error(e);
+      alert('Une erreur est survenue.');
+    } finally {
+      this.isSubmittingFeedback = false;
+    }
+  }
+
+  // Helper pour le HTML
+  isFieldInvalid(field: string) {
+    const control = this.feedbackForm.get(field);
+    return control?.invalid && (control?.dirty || control?.touched);
+  }
+
+  // --- LIGHTBOX ---
+  openGallery(gallery: Gallery) {
+    if (!gallery.images || gallery.images.length === 0) return;
+    this.selectedGallery = gallery;
+    this.currentImageIndex = 0;
     this.lightboxOpen = true;
-    document.body.style.overflow = 'hidden'; // Empêche le scroll arrière-plan
+    document.body.style.overflow = 'hidden';
   }
 
   closeLightbox() {
     this.lightboxOpen = false;
-    this.currentImage = null;
+    this.selectedGallery = null;
+    this.currentImageIndex = 0;
     document.body.style.overflow = 'auto';
+  }
+
+  nextImage(e?: any) {
+    e?.stopPropagation();
+    if (!this.selectedGallery || !this.selectedGallery.images) return;
+    this.currentImageIndex = (this.currentImageIndex < this.selectedGallery.images.length - 1) ? this.currentImageIndex + 1 : 0;
+  }
+
+  prevImage(e?: any) {
+    e?.stopPropagation();
+    if (!this.selectedGallery || !this.selectedGallery.images) return;
+    this.currentImageIndex = (this.currentImageIndex > 0) ? this.currentImageIndex - 1 : this.selectedGallery.images.length - 1;
+  }
+
+  getCoverImage(event: Event): string {
+    if (event.galleryImages && event.galleryImages.length > 0) return event.galleryImages[0];
+    return 'https://via.placeholder.com/800x600?text=Kyranis+Park';
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (this.lightboxOpen) {
+      if (event.key === 'Escape') this.closeLightbox();
+      else if (event.key === 'ArrowRight') this.nextImage();
+      else if (event.key === 'ArrowLeft') this.prevImage();
+    }
   }
 }
 
@@ -1867,7 +2546,7 @@ export class PageNotFoundComponent {}
 
 ====================================
 FICHIER: ./src/app/pages/reservations/reservations.component.ts
-Lignes:      188
+Lignes:      191
 ====================================
 
 import { Component, OnInit, inject } from '@angular/core';
@@ -1924,7 +2603,6 @@ export class ReservationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForms();
-
     // Vérifier les query params pour pré-sélectionner l'onglet
     this.route.queryParams.subscribe(params => {
       if (params['type'] === 'park') {
@@ -1981,7 +2659,7 @@ export class ReservationsComponent implements OnInit {
       const type = this.boatForm.get('boatType')?.value;
       const basePrice = this.boatPrices[type] || 0;
       // Exemple simple: Prix fixe par bateau (pourrait être par personne)
-      this.estimatedPrice = basePrice; 
+      this.estimatedPrice = basePrice;
     } else {
       const type = this.parkForm.get('eventType')?.value;
       const duration = this.parkForm.get('duration')?.value;
@@ -1989,10 +2667,10 @@ export class ReservationsComponent implements OnInit {
       const pax = this.parkForm.get('numberOfPeople')?.value || 0;
 
       let price = this.eventPrices[type] || 0;
-
+      
       // Facteur durée
       if (duration === 'full_day') price *= 1.5;
-
+      
       // Facteur menu (ex: 50 TND par personne)
       if (menu) price += (pax * 50);
 
@@ -2006,23 +2684,27 @@ export class ReservationsComponent implements OnInit {
 
     if (currentForm.invalid) {
       this.isSubmitting = false;
-      currentForm.markAllAsTouched(); // Affiche toutes les erreurs
+      currentForm.markAllAsTouched();
+      // Affiche toutes les erreurs
       return;
     }
 
     const formValues = currentForm.value;
 
     // Construction de l'objet Reservation
+    // FIX: Utilisation de null au lieu de undefined pour Firestore
     const reservationData: Reservation = {
       type: this.activeTab,
       fullName: formValues.fullName,
       email: formValues.email,
       phone: formValues.phone,
       date: new Date(formValues.date),
-      time: this.activeTab === 'boat' ? formValues.time : '00:00', // Time non requis pour Park event (souvent toute la journée)
+      time: this.activeTab === 'boat' ? formValues.time : '00:00',
       numberOfPeople: formValues.numberOfPeople,
-      boatType: this.activeTab === 'boat' ? formValues.boatType : undefined,
-      eventType: this.activeTab === 'park' ? formValues.eventType : undefined,
+      
+      boatType: this.activeTab === 'boat' ? formValues.boatType : null,
+      eventType: this.activeTab === 'park' ? formValues.eventType : null,
+      
       specialRequests: formValues.specialRequests,
       status: 'pending',
       totalPrice: this.estimatedPrice,
@@ -2310,7 +2992,7 @@ export class Firebase {
 
 ====================================
 FICHIER: ./src/app/services/firestore.service.ts
-Lignes:      199
+Lignes:      225
 ====================================
 
 import { Injectable, inject } from '@angular/core';
@@ -2327,15 +3009,19 @@ import {
   query, 
   where, 
   orderBy, 
+  limit,
   Timestamp 
 } from '@angular/fire/firestore';
-import { Observable, map, from } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { 
   Event, 
   Reservation, 
   AppSettings, 
   Gallery, 
-  ReservationStatus 
+  ReservationStatus,
+  HeroSlide,
+  Feedback,
+  FeedbackStatus
 } from '../models';
 
 @Injectable({
@@ -2344,14 +3030,78 @@ import {
 export class FirestoreService {
   private firestore: Firestore = inject(Firestore);
 
-  // ==========================================
-  // EVENTS
-  // ==========================================
+  // --- FEEDBACKS (NOUVEAU) ---
 
+  // Pour l'Admin : Voir tous les feedbacks
+  getAllFeedbacks(): Observable<Feedback[]> {
+    const ref = collection(this.firestore, 'feedbacks');
+    const q = query(ref, orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }).pipe(
+      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
+    ) as Observable<Feedback[]>;
+  }
+
+  // Pour le Site Public : Voir seulement les approuvés
+  getApprovedFeedbacks(limitCount: number = 3): Observable<Feedback[]> {
+    const ref = collection(this.firestore, 'feedbacks');
+    const q = query(
+      ref, 
+      where('status', '==', 'approved'), 
+      orderBy('createdAt', 'desc'), 
+      limit(limitCount)
+    );
+    return collectionData(q, { idField: 'id' }).pipe(
+      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
+    ) as Observable<Feedback[]>;
+  }
+
+  // Ajouter un avis (Statut pending par défaut)
+  addFeedback(feedback: Partial<Feedback>): Promise<void> {
+    const ref = collection(this.firestore, 'feedbacks');
+    return addDoc(ref, {
+      ...feedback,
+      status: 'pending',
+      createdAt: Timestamp.now()
+    }).then(() => undefined);
+  }
+
+  // Modération (Approuver/Rejeter)
+  updateFeedbackStatus(id: string, status: FeedbackStatus): Promise<void> {
+    const docRef = doc(this.firestore, `feedbacks/${id}`);
+    return updateDoc(docRef, { status });
+  }
+
+  deleteFeedback(id: string): Promise<void> {
+    const docRef = doc(this.firestore, `feedbacks/${id}`);
+    return deleteDoc(docRef);
+  }
+
+  // --- HERO SLIDER ---
+  getHeroSlides(): Observable<HeroSlide[]> {
+    const ref = collection(this.firestore, 'hero_slides');
+    const q = query(ref, orderBy('createdAt', 'desc'));
+    return collectionData(q, { idField: 'id' }).pipe(
+      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
+    ) as Observable<HeroSlide[]>;
+  }
+
+  addHeroSlide(slide: HeroSlide): Promise<void> {
+    const ref = collection(this.firestore, 'hero_slides');
+    return addDoc(ref, {
+      ...slide,
+      createdAt: Timestamp.now()
+    }).then(() => undefined);
+  }
+
+  deleteHeroSlide(id: string): Promise<void> {
+    const docRef = doc(this.firestore, `hero_slides/${id}`);
+    return deleteDoc(docRef);
+  }
+
+  // --- EVENTS ---
   getEvents(): Observable<Event[]> {
     const eventsRef = collection(this.firestore, 'events');
     const q = query(eventsRef, orderBy('date', 'desc'));
-    
     return collectionData(q, { idField: 'eventId' }).pipe(
       map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
     ) as Observable<Event[]>;
@@ -2366,7 +3116,6 @@ export class FirestoreService {
 
   addEvent(event: Event): Promise<void> {
     const eventsRef = collection(this.firestore, 'events');
-    // On laisse Firestore gérer l'ID
     return addDoc(eventsRef, {
       ...event,
       createdAt: Timestamp.now(),
@@ -2387,30 +3136,13 @@ export class FirestoreService {
     return deleteDoc(docRef);
   }
 
-  // ==========================================
-  // RESERVATIONS
-  // ==========================================
-
-  /**
-   * Récupère les réservations, optionnellement filtrées par type ('boat' | 'park')
-   */
+  // --- RESERVATIONS ---
   getReservations(type?: 'boat' | 'park'): Observable<Reservation[]> {
     const ref = collection(this.firestore, 'reservations');
     let q = query(ref, orderBy('createdAt', 'desc'));
-
     if (type) {
       q = query(ref, where('type', '==', type), orderBy('createdAt', 'desc'));
     }
-
-    return collectionData(q, { idField: 'reservationId' }).pipe(
-      map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
-    ) as Observable<Reservation[]>;
-  }
-
-  getReservationsByStatus(status: ReservationStatus): Observable<Reservation[]> {
-    const ref = collection(this.firestore, 'reservations');
-    const q = query(ref, where('status', '==', status), orderBy('createdAt', 'desc'));
-
     return collectionData(q, { idField: 'reservationId' }).pipe(
       map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
     ) as Observable<Reservation[]>;
@@ -2421,7 +3153,7 @@ export class FirestoreService {
     return addDoc(ref, {
       ...reservation,
       createdAt: Timestamp.now(),
-      status: 'pending' // Default status
+      status: 'pending'
     }).then(() => undefined);
   }
 
@@ -2435,13 +3167,7 @@ export class FirestoreService {
     return deleteDoc(docRef);
   }
 
-  // ==========================================
-  // SETTINGS
-  // ==========================================
-
-  /**
-   * Nous utilisons un ID unique 'main' pour les settings
-   */
+  // --- SETTINGS ---
   getSettings(): Observable<AppSettings> {
     const docRef = doc(this.firestore, 'settings/main');
     return docData(docRef) as Observable<AppSettings>;
@@ -2449,22 +3175,16 @@ export class FirestoreService {
 
   updateSettings(data: Partial<AppSettings>): Promise<void> {
     const docRef = doc(this.firestore, 'settings/main');
-    // setDoc avec { merge: true } crée le document s'il n'existe pas encore
     return setDoc(docRef, data, { merge: true });
   }
 
-  // ==========================================
-  // GALLERIES
-  // ==========================================
-
+  // --- GALLERIES ---
   getGalleries(category?: 'park' | 'events' | 'boats'): Observable<Gallery[]> {
     const ref = collection(this.firestore, 'galleries');
     let q = query(ref, orderBy('createdAt', 'desc'));
-
     if (category) {
       q = query(ref, where('category', '==', category), orderBy('createdAt', 'desc'));
     }
-
     return collectionData(q, { idField: 'galleryId' }).pipe(
       map((documents: any[]) => documents.map(doc => this.mapDateFields(doc)))
     ) as Observable<Gallery[]>;
@@ -2488,27 +3208,15 @@ export class FirestoreService {
     return deleteDoc(docRef);
   }
 
-  // ==========================================
-  // HELPERS (Date Conversion)
-  // ==========================================
-
-  /**
-   * Helper pour convertir les Timestamps Firestore en Date JavaScript.
-   * Firestore retourne des objets Timestamp { seconds, nanoseconds } qui ne sont pas
-   * directement lisibles par les Pipes Date d'Angular sans conversion.
-   */
+  // --- HELPERS ---
   private mapDateFields(data: any): any {
     const converted = { ...data };
-    
-    // Liste des champs susceptibles d'être des dates
     const dateFields = ['date', 'createdAt', 'updatedAt'];
-
     dateFields.forEach(field => {
       if (converted[field] && typeof converted[field].toDate === 'function') {
         converted[field] = converted[field].toDate();
       }
     });
-
     return converted;
   }
 }
@@ -2572,7 +3280,7 @@ export class SeoService {
 
 ====================================
 FICHIER: ./src/app/services/supabase.service.ts
-Lignes:       93
+Lignes:      115
 ====================================
 
 import { Injectable } from '@angular/core';
@@ -2600,7 +3308,7 @@ export class SupabaseService {
    */
   async uploadImage(file: File, folder: string = 'images'): Promise<FileUploadResponse> {
     const filePath = `${folder}/${Date.now()}-${file.name}`;
-    
+
     const { data, error } = await this.supabase.storage
       .from(this.BUCKET_NAME)
       .upload(filePath, file, {
@@ -2620,12 +3328,11 @@ export class SupabaseService {
   }
 
   /**
-   * Upload d'une vidéo (logique séparée pour gestion potentielle de gros fichiers)
+   * Upload d'une vidéo
    */
   async uploadVideo(file: File, folder: string = 'videos'): Promise<FileUploadResponse> {
     const filePath = `${folder}/${Date.now()}-${file.name}`;
     
-    // Pour les vidéos, on peut vouloir augmenter le timeout ou gérer les chunks
     const { data, error } = await this.supabase.storage
       .from(this.BUCKET_NAME)
       .upload(filePath, file, {
@@ -2645,7 +3352,7 @@ export class SupabaseService {
   }
 
   /**
-   * Supprime un fichier via son chemin
+   * Supprime un fichier via son chemin interne
    */
   async deleteFile(path: string): Promise<void> {
     const { error } = await this.supabase.storage
@@ -2658,13 +3365,36 @@ export class SupabaseService {
   }
 
   /**
+   * Tente de supprimer un fichier à partir de son URL publique
+   * Extrait le chemin relatif à partir de l'URL.
+   */
+  async deleteFileByUrl(url: string): Promise<void> {
+    try {
+      // Structure URL typique: .../storage/v1/object/public/BUCKET_NAME/folder/file.jpg
+      const bucketMarker = `/public/${this.BUCKET_NAME}/`;
+      const parts = url.split(bucketMarker);
+      
+      if (parts.length === 2) {
+        const path = parts[1];
+        // Décoder l'URL au cas où il y aurait des espaces (%20)
+        await this.deleteFile(decodeURIComponent(path));
+      } else {
+        console.warn('Impossible d\'extraire le chemin Supabase de l\'URL:', url);
+      }
+    } catch (e) {
+      console.error('Erreur lors de la suppression Supabase:', e);
+      throw e;
+    }
+  }
+
+  /**
    * Obtient l'URL publique d'un fichier
    */
   getFileUrl(path: string): string {
     const { data } = this.supabase.storage
       .from(this.BUCKET_NAME)
       .getPublicUrl(path);
-    
+
     return data.publicUrl;
   }
 }
@@ -2817,7 +3547,7 @@ Lignes:        0
 <router-outlet />
 ====================================
 FICHIER: ./src/app/components/admin-dashboard/admin-dashboard.component.html
-Lignes:       72
+Lignes:      114
 ====================================
 
 <div class="flex h-screen bg-gray-100 font-sans">
@@ -2835,28 +3565,70 @@ Lignes:       72
     </div>
 
     <nav class="flex-1 px-2 py-4 space-y-2">
+      
       <a routerLink="/admin/stats" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-        Dashboard
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+          Dashboard
+        </div>
       </a>
 
       <a routerLink="/admin/events" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        Événements
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          Événements
+        </div>
+        <span *ngIf="eventCount$ | async as count" class="bg-gray-700 text-gray-200 py-0.5 px-2.5 rounded-full text-xs font-bold border border-gray-600">
+          {{ count }}
+        </span>
       </a>
 
       <a routerLink="/admin/reservations" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-        Réservations
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+          Réservations
+        </div>
+        <ng-container *ngIf="reservationCount$ | async as count">
+          <span [class]="count > 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-700 text-gray-400'" 
+                class="py-0.5 px-2.5 rounded-full text-xs font-bold shadow-sm">
+            {{ count }}
+          </span>
+        </ng-container>
+      </a>
+
+      <a routerLink="/admin/feedback" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+         <div class="flex items-center">
+            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+            Avis Clients
+         </div>
+      </a>
+
+      <a routerLink="/admin/hero" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+         <div class="flex items-center">
+            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            Slider Accueil
+         </div>
+      </a>
+
+      <a routerLink="/admin/gallery" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+         <div class="flex items-center">
+            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            Galerie Média
+         </div>
       </a>
 
       <a routerLink="/admin/settings" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        Paramètres
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Paramètres
+        </div>
       </a>
     </nav>
 
@@ -3200,6 +3972,289 @@ Lignes:      200
 </div>
 
 ====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-feedback/manage-feedback.component.html
+Lignes:       62
+====================================
+
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Avis Clients</h2>
+    <div class="text-sm text-gray-500">Validez les avis avant publication</div>
+  </div>
+
+  <div *ngIf="toastMessage" 
+       [class.bg-green-500]="toastType === 'success'"
+       [class.bg-red-500]="toastType === 'error'"
+       class="fixed top-4 right-4 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce">
+    {{ toastMessage }}
+  </div>
+
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Note</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngFor="let fb of feedbacks$ | async" class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            {{ fb.createdAt | date:'shortDate' }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+            {{ fb.name }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-yellow-500">
+            <span *ngFor="let s of [1,2,3,4,5]">
+              {{ s <= fb.rating ? '★' : '☆' }}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title="{{ fb.message }}">
+            {{ fb.message }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span [class]="getStatusClass(fb.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize">
+              {{ getStatusLabel(fb.status) }}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <button *ngIf="fb.status === 'pending'" (click)="updateStatus(fb.id!, 'approved')" class="text-green-600 hover:text-green-900 mr-3 font-bold">Valider</button>
+            <button *ngIf="fb.status === 'pending'" (click)="updateStatus(fb.id!, 'rejected')" class="text-red-600 hover:text-red-900 mr-3">Refuser</button>
+            <button (click)="deleteFeedback(fb.id!)" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="(feedbacks$ | async)?.length === 0" class="p-6 text-center text-gray-500">
+      Aucun avis client pour le moment.
+    </div>
+  </div>
+</div>
+
+====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-gallery/manage-gallery.component.html
+Lignes:      119
+====================================
+
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Gestion de la Galerie (Notre Galerie)</h2>
+    <button (click)="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center shadow-sm transition-colors">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+      Nouvel Album
+    </button>
+  </div>
+
+  <div *ngIf="toastMessage" 
+       [class.bg-green-500]="toastType === 'success'"
+       [class.bg-red-500]="toastType === 'error'"
+       class="fixed top-4 right-4 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce">
+    {{ toastMessage }}
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngFor="let gallery of galleries" class="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition-all">
+      <div class="h-40 bg-gray-200 relative">
+        <img *ngIf="gallery.images && gallery.images.length > 0" 
+             [src]="gallery.images[0]" 
+             class="w-full h-full object-cover">
+        <div *ngIf="!gallery.images || gallery.images.length === 0" class="flex items-center justify-center h-full text-gray-400">
+          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        </div>
+        <div class="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+          {{ gallery.images?.length || 0 }} images
+        </div>
+      </div>
+      
+      <div class="p-4">
+        <h3 class="font-bold text-lg text-gray-800 mb-1">{{ gallery.name }}</h3>
+        <p class="text-xs text-gray-500 mb-4">Catégorie: {{ gallery.category }}</p>
+        
+        <div class="flex justify-end space-x-2 border-t pt-3">
+          <button (click)="openEditModal(gallery)" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded text-sm font-medium">Modifier / Photos</button>
+          <button (click)="confirmDelete(gallery.galleryId!)" class="text-red-600 hover:bg-red-50 px-3 py-1 rounded text-sm font-medium">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="galleries.length === 0" class="bg-white p-12 rounded-lg shadow text-center text-gray-500">
+    Aucune galerie trouvée. Créez-en une pour qu'elle apparaisse sur la page d'accueil.
+  </div>
+</div>
+
+<div *ngIf="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeModal()"></div>
+
+    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+      <form [formGroup]="galleryForm" (ngSubmit)="saveGallery()">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">
+            {{ currentGalleryId ? 'Modifier l\'Album' : 'Nouvel Album' }}
+          </h3>
+
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Nom de l'album</label>
+              <input type="text" formControlName="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Catégorie</label>
+              <select formControlName="category" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <option value="park">Parc (Accueil)</option>
+                <option value="events">Événements</option>
+                <option value="boats">Bateaux</option>
+              </select>
+            </div>
+
+            <div class="border-t pt-4 mt-2">
+              <h4 class="font-medium text-gray-900 mb-2">Gestion des Images</h4>
+              
+              <div class="mb-4">
+                <label class="block w-full flex flex-col items-center px-4 py-6 bg-white text-blue rounded-lg shadow-lg tracking-wide uppercase border border-blue cursor-pointer hover:bg-blue-50 transition-colors">
+                    <svg class="w-8 h-8 text-blue-600" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
+                    </svg>
+                    <span class="mt-2 text-base leading-normal text-blue-600 font-bold">Sélectionner des images</span>
+                    <input type='file' class="hidden" multiple accept="image/*" (change)="handleFileUpload($event)" />
+                </label>
+                <div *ngIf="isUploading" class="mt-2 text-center text-blue-600 text-sm animate-pulse">
+                   Téléchargement en cours vers Supabase...
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 max-h-60 overflow-y-auto p-2 border rounded bg-gray-50">
+                <div *ngFor="let url of galleryForm.get('images')?.value" class="relative group aspect-square">
+                  <img [src]="url" class="w-full h-full object-cover rounded shadow-sm border">
+                  
+                  <button type="button" (click)="removeImage(url)" 
+                          class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 shadow-md"
+                          title="Supprimer définitivement">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                </div>
+                <div *ngIf="galleryForm.get('images')?.value.length === 0" class="col-span-4 text-center text-gray-400 py-4 text-sm">
+                   Aucune image dans cet album.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button type="submit" [disabled]="isSubmitting || isUploading" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-400">
+            {{ isSubmitting ? 'Enregistrement...' : 'Sauvegarder' }}
+          </button>
+          <button type="button" (click)="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-hero/manage-hero.component.html
+Lignes:       84
+====================================
+
+<div class="p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Slider Page d'Accueil</h2>
+    <div class="text-sm text-gray-500">Gérez vos images promotionnelles</div>
+  </div>
+
+  <div *ngIf="toastMessage" 
+       [class.bg-green-500]="toastType === 'success'"
+       [class.bg-red-500]="toastType === 'error'"
+       class="fixed top-4 right-4 text-white px-6 py-3 rounded shadow-lg z-50 animate-bounce">
+    {{ toastMessage }}
+  </div>
+
+  <div class="bg-white rounded-xl shadow-md p-6 mb-8 border border-gray-100">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Ajouter une nouvelle slide</h3>
+    
+    <form [formGroup]="slideForm" (ngSubmit)="addSlide()" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors"
+           [class.border-blue-500]="isUploading">
+        
+        <input type="file" id="slideUpload" class="hidden" accept="image/*" (change)="handleFileUpload($event)" [disabled]="isUploading">
+        
+        <label for="slideUpload" class="cursor-pointer w-full h-full flex flex-col items-center justify-center">
+          <div *ngIf="previewUrl; else uploadIcon" class="relative group w-full h-48 rounded-md overflow-hidden">
+            <img [src]="previewUrl" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+              Changer l'image
+            </div>
+          </div>
+          
+          <ng-template #uploadIcon>
+            <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span class="text-sm text-gray-600 font-medium">Cliquez pour uploader</span>
+            <span class="text-xs text-gray-400 mt-1">Recommandé: 1920x1080px</span>
+          </ng-template>
+        </label>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Titre (Gros)</label>
+          <input type="text" formControlName="title" placeholder="Ex: Bienvenue à Kyranis Park" class="w-full border border-gray-300 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sous-titre (Petit)</label>
+          <input type="text" formControlName="subtitle" placeholder="Ex: L'évasion au cœur des îles" class="w-full border border-gray-300 rounded-md py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <button type="submit" 
+                [disabled]="slideForm.invalid || isUploading || isSubmitting || !uploadedFileUrl"
+                class="mt-auto w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 flex justify-center items-center">
+          <span *ngIf="isUploading || isSubmitting" class="animate-spin mr-2">⟳</span>
+          {{ isUploading ? 'Upload...' : (isSubmitting ? 'Enregistrement...' : 'Ajouter la Slide') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <h3 class="text-xl font-bold text-gray-800 mb-4">Slides Actives</h3>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div *ngFor="let slide of slides$ | async" class="group relative bg-white rounded-xl shadow overflow-hidden">
+      <div class="h-48 relative">
+        <img [src]="slide.imageUrl" class="w-full h-full object-cover">
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+        
+        <div class="absolute bottom-4 left-4 right-4">
+          <p class="font-bold text-lg leading-tight text-white drop-shadow-md">{{ slide.title }}</p>
+          <p class="text-sm mt-1 text-gray-200 drop-shadow-sm">{{ slide.subtitle }}</p>
+        </div>
+      </div>
+      
+      <button (click)="deleteSlide(slide)" class="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110" title="Supprimer">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="(slides$ | async)?.length === 0" class="text-center py-12 text-gray-500 bg-white rounded-lg border border-dashed">
+    Aucune slide personnalisée.
+  </div>
+</div>
+
+====================================
 FICHIER: ./src/app/components/admin-dashboard/manage-reservations/manage-reservations.component.html
 Lignes:      244
 ====================================
@@ -3451,7 +4506,7 @@ Lignes:      244
 
 ====================================
 FICHIER: ./src/app/components/admin-dashboard/settings/settings.component.html
-Lignes:      127
+Lignes:      116
 ====================================
 
 <div class="p-6 max-w-5xl mx-auto">
@@ -3459,7 +4514,7 @@ Lignes:      127
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold text-gray-800">Paramètres Généraux</h2>
     <div *ngIf="isSaving" class="flex items-center text-blue-600 text-sm">
-      <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+      <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
       Sauvegarde...
     </div>
   </div>
@@ -3473,109 +4528,98 @@ Lignes:      127
 
   <form [formGroup]="settingsForm" (ngSubmit)="onSubmit()" class="space-y-6">
     
+    <div class="bg-white shadow rounded-lg p-6" formGroupName="header">
+      <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Configuration du Header (Menu)</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="md:col-span-2 border p-4 rounded bg-gray-50">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Logo du Site</label>
+          
+          <div class="flex items-center gap-6">
+            <div class="h-16 w-auto min-w-[100px] border bg-white flex items-center justify-center rounded overflow-hidden">
+               <img *ngIf="settingsForm.get('header.logoUrl')?.value" 
+                    [src]="settingsForm.get('header.logoUrl')?.value" 
+                    class="h-full object-contain">
+               <span *ngIf="!settingsForm.get('header.logoUrl')?.value" class="text-xs text-gray-400">Aucun logo</span>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label class="cursor-pointer bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200 transition text-center">
+                <span *ngIf="!isUploadingLogo">Télécharger une image</span>
+                <span *ngIf="isUploadingLogo">Upload en cours...</span>
+                <input type="file" class="hidden" accept="image/*" (change)="handleLogoUpload($event)" [disabled]="isUploadingLogo">
+              </label>
+              
+              <button *ngIf="settingsForm.get('header.logoUrl')?.value" 
+                      type="button" 
+                      (click)="removeLogo()" 
+                      class="text-red-600 text-xs hover:underline text-center">
+                Supprimer le logo
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">Si aucun logo n'est défini, le texte ci-dessous sera affiché.</p>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Texte du Logo (Fallback)</label>
+          <input type="text" formControlName="logoText" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 font-bold">
+        </div>
+
+        <div><label class="block text-sm font-medium text-gray-700">Label "Accueil"</label><input type="text" formControlName="menuHome" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Label "Événements"</label><input type="text" formControlName="menuEvents" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Label "Réservations"</label><input type="text" formControlName="menuReservations" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Label "Contact"</label><input type="text" formControlName="menuContact" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+      </div>
+    </div>
+
     <div class="bg-white shadow rounded-lg p-6">
       <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Informations Entreprise</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Nom du Business</label>
-          <input type="text" formControlName="businessName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Horaires d'ouverture</label>
-          <input type="text" formControlName="openingHours" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Téléphone</label>
-          <input type="text" formControlName="phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Email Contact</label>
-          <input type="email" formControlName="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Adresse</label>
-          <input type="text" formControlName="address" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">URL Facebook Page</label>
-          <input type="text" formControlName="facebookUrl" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
+        <div><label class="block text-sm font-medium text-gray-700">Nom du Business</label><input type="text" formControlName="businessName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Horaires</label><input type="text" formControlName="openingHours" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Téléphone</label><input type="text" formControlName="phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Email</label><input type="email" formControlName="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Adresse</label><input type="text" formControlName="address" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Facebook URL</label><input type="text" formControlName="facebookUrl" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
       </div>
     </div>
 
     <div class="bg-white shadow rounded-lg p-6">
       <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Contenu & Localisation</h3>
       <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Description Page d'Accueil</label>
-          <textarea formControlName="homePageDescription" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"></textarea>
-          <p class="text-xs text-gray-500 mt-1">S'affiche dans la section présentation de l'accueil.</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Description Parc (Page Contact/Infos)</label>
-          <textarea formControlName="parkDescription" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Google Maps Embed Code (HTML)</label>
-          <textarea formControlName="googleMapsEmbed" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 font-mono text-xs text-gray-600"></textarea>
-          <p class="text-xs text-gray-500 mt-1">Collez ici le code &lt;iframe&gt; fourni par Google Maps.</p>
-        </div>
+        <div><label class="block text-sm font-medium text-gray-700">Intro Accueil</label><textarea formControlName="homePageDescription" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></textarea></div>
+        <div><label class="block text-sm font-medium text-gray-700">Description Parc</label><textarea formControlName="parkDescription" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></textarea></div>
+        <div><label class="block text-sm font-medium text-gray-700">Google Maps Embed</label><textarea formControlName="googleMapsEmbed" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-xs"></textarea></div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
       <div class="bg-white shadow rounded-lg p-6" formGroupName="boatPrices">
-        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Bateaux (TND)</h3>
+        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Bateaux</h3>
         <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Flouka</label>
-            <input type="number" formControlName="flouka" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Speed Boat</label>
-            <input type="number" formControlName="speed_boat" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Catamaran</label>
-            <input type="number" formControlName="catamaran" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Yacht</label>
-            <input type="number" formControlName="yacht" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
+          <div class="flex justify-between"><label>Flouka</label><input type="number" formControlName="flouka" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Speed Boat</label><input type="number" formControlName="speed_boat" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Catamaran</label><input type="number" formControlName="catamaran" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Yacht</label><input type="number" formControlName="yacht" class="w-24 border rounded px-2"></div>
         </div>
       </div>
-
       <div class="bg-white shadow rounded-lg p-6" formGroupName="eventPrices">
-        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Espace Privé (TND)</h3>
+        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Espace Privé</h3>
         <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Anniversaire</label>
-            <input type="number" formControlName="birthday" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Mariage</label>
-            <input type="number" formControlName="marriage" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Conférence</label>
-            <input type="number" formControlName="conference" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Autre</label>
-            <input type="number" formControlName="other" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
+          <div class="flex justify-between"><label>Anniversaire</label><input type="number" formControlName="birthday" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Mariage</label><input type="number" formControlName="marriage" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Conférence</label><input type="number" formControlName="conference" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Autre</label><input type="number" formControlName="other" class="w-24 border rounded px-2"></div>
         </div>
       </div>
     </div>
 
     <div class="flex justify-end space-x-4 pt-4">
-      <button type="button" (click)="resetForm()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-        Réinitialiser
-      </button>
-      <button type="submit" [disabled]="isSaving" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
-        {{ isSaving ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+      <button type="button" (click)="resetForm()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Réinitialiser</button>
+      <button type="submit" [disabled]="isSaving" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50">
+        {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
     </div>
 
@@ -3584,87 +4628,60 @@ Lignes:      127
 
 ====================================
 FICHIER: ./src/app/components/footer/footer.component.html
-Lignes:       78
+Lignes:       51
 ====================================
 
-<footer class="bg-gray-900 text-white border-t border-gray-800">
+<div class="bg-gray-900 text-white w-full border-t border-gray-800">
+  
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
       
       <div class="space-y-4">
         <div class="flex items-center space-x-2">
-          <span class="text-2xl font-bold tracking-wider text-blue-500">KYRANIS<span class="text-white">PARK</span></span>
+           <span class="text-2xl font-bold tracking-wider text-blue-500">
+             {{ (settings?.businessName || 'KYRANIS PARK') | uppercase }}
+           </span>
         </div>
         <p class="text-gray-400 text-sm leading-relaxed">
-          Votre porte d'entrée vers la magie des îles Kerkennah. 
-          Entre mer cristalline et palmeraies, vivez une expérience unique alliant détente, 
-          gastronomie et aventure maritime.
+          {{ settings?.homePageDescription || 'Votre évasion au cœur des îles.' }}
         </p>
-        
-        <div class="flex space-x-4 pt-2">
-          <a href="https://facebook.com/kyranispark" target="_blank" class="text-gray-400 hover:text-blue-500 transition-colors">
-            <span class="sr-only">Facebook</span>
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" />
-            </svg>
-          </a>
-          <a href="#" class="text-gray-400 hover:text-pink-500 transition-colors">
-            <span class="sr-only">Instagram</span>
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772 4.902 4.902 0 011.772-1.153c.636-.247 1.363-.416 2.427-.465C9.673 2.013 10.03 2 12.48 2h-.165zm0 1.981h.166c-2.444 0-2.753.01-3.652.054-.91.042-1.403.195-1.734.323-.42.164-.72.36-.975.614-.255.255-.45.556-.614.975-.128.33-.28.824-.323 1.734-.044.899-.053 1.208-.053 3.652 0 2.443.01 2.753.054 3.652.042.91.195 1.403.323 1.734.164.42.36.72.614.975.255.255.556.45.975.614.33.128.824.28 1.734.323.899.044 1.208.053 3.652.053 2.443 0 2.753-.01 3.652-.054.91-.042 1.403-.195 1.734-.323.42-.164.72-.36.975-.614.255-.255.45-.556.614-.975.128-.33.28-.824.323-1.734.044-.899.053-1.208.053-3.652 0-2.443-.01-2.753-.054-3.652-.042-.91-.195-1.403-.323-1.734-.164-.42-.36-.72-.614-.975-.255-.255-.556-.45-.975-.614-.33-.128-.824-.28-1.734-.323-.899-.044-1.208-.053-3.652-.053zm3.78 1.574a1.32 1.32 0 110 2.64 1.32 1.32 0 010-2.64zM12.48 7.02c-2.836 0-5.137 2.3-5.137 5.136 0 2.835 2.301 5.136 5.137 5.136 2.835 0 5.136-2.3 5.136-5.136 0-2.836-2.301-5.136-5.136-5.136zm0 2.12a3.016 3.016 0 100 6.032 3.016 3.016 0 000-6.032z" clip-rule="evenodd" />
-            </svg>
-          </a>
-        </div>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider">Navigation</h3>
-        <ul class="space-y-3">
-          <li><a routerLink="/" class="text-gray-400 hover:text-blue-500 transition-colors">Accueil</a></li>
-          <li><a routerLink="/evenements" class="text-gray-400 hover:text-blue-500 transition-colors">Nos Événements</a></li>
-          <li><a routerLink="/reservations" class="text-gray-400 hover:text-blue-500 transition-colors">Réserver Bateau / Parc</a></li>
-          <li><a routerLink="/contact" class="text-gray-400 hover:text-blue-500 transition-colors">Contact</a></li>
-          <li><a routerLink="/mentions-legales" class="text-gray-400 hover:text-blue-500 transition-colors text-xs">Mentions Légales</a></li>
+        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Menu</h3>
+        <ul class="space-y-3 text-sm">
+          <li><a routerLink="/" class="text-gray-400 hover:text-blue-400 no-underline">Accueil</a></li>
+          <li><a routerLink="/evenements" class="text-gray-400 hover:text-blue-400 no-underline">Agenda</a></li>
+          <li><a routerLink="/reservations" class="text-gray-400 hover:text-blue-400 no-underline">Réserver</a></li>
+          <li><a routerLink="/contact" class="text-gray-400 hover:text-blue-400 no-underline">Contact</a></li>
         </ul>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider">Nous Contacter</h3>
-        <ul class="space-y-4">
+        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Infos</h3>
+        <ul class="space-y-4 text-sm">
           <li class="flex items-start">
-            <svg class="h-6 w-6 text-blue-500 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span class="text-gray-400">Zone Touristique,<br>Îles Kerkennah, Tunisie</span>
+            <span class="text-blue-500 mr-3">📍</span>
+            <span class="text-gray-300">{{ settings?.address || 'Zone Touristique' }}</span>
           </li>
           <li class="flex items-center">
-            <svg class="h-6 w-6 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            <span class="text-gray-400">+216 28 417 822</span>
+            <span class="text-blue-500 mr-3">📞</span>
+            <a href="tel:{{ settings?.phone }}" class="text-white font-medium hover:text-blue-400 no-underline">{{ settings?.phone || '--' }}</a>
           </li>
           <li class="flex items-center">
-            <svg class="h-6 w-6 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <span class="text-gray-400">contact@kyranispark.tn</span>
+            <span class="text-blue-500 mr-3">✉️</span>
+            <a href="mailto:{{ settings?.email }}" class="text-gray-300 hover:text-white no-underline">{{ settings?.email || '--' }}</a>
           </li>
         </ul>
       </div>
     </div>
     
-    <div class="mt-12 pt-8 border-t border-gray-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center">
-      <p class="text-gray-500 text-sm">
-        &copy; {{ currentYear }} Kyranis Park. Tous droits réservés.
-      </p>
-      <div class="mt-4 md:mt-0">
-        <span class="text-gray-600 text-xs">Designed for Kerkennah Lovers</span>
-      </div>
+    <div class="mt-12 pt-8 border-t border-gray-800 text-center text-xs text-gray-500">
+      <p>© {{ currentYear }} {{ settings?.businessName }}. Tous droits réservés.</p>
+      <a routerLink="/admin-login" class="mt-2 inline-block hover:text-white">Admin</a>
     </div>
   </div>
-</footer>
+</div>
 
 ====================================
 FICHIER: ./src/app/components/gallery/gallery.component.html
@@ -3752,67 +4769,67 @@ Lignes:       78
 
 ====================================
 FICHIER: ./src/app/components/header/header.component.html
-Lignes:       87
+Lignes:       86
 ====================================
 
-<header class="bg-white shadow-md fixed w-full z-50 top-0 left-0">
+<header class="bg-white shadow-md fixed w-full z-50 top-0 left-0 transition-all duration-300 h-12">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-16">
+    <div class="flex justify-between items-center h-12">
       
       <div class="flex-shrink-0 flex items-center cursor-pointer" routerLink="/">
-        <span class="text-2xl font-bold text-blue-600 tracking-wider">KYRANIS<span class="text-gray-800">PARK</span></span>
+        <img *ngIf="settings.header?.logoUrl" 
+             [src]="settings.header?.logoUrl" 
+             alt="Logo" 
+             class="h-8 w-auto object-contain">
+
+        <span *ngIf="!settings.header?.logoUrl" class="text-xl font-bold text-blue-600 tracking-wider">
+          {{ settings.header?.logoText || 'KYRANIS PARK' }}
+        </span>
       </div>
 
-      <nav class="hidden md:flex space-x-8 items-center">
+      <nav class="hidden md:flex space-x-6 items-center">
         <a routerLink="/" 
            routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600" 
            [routerLinkActiveOptions]="{exact: true}"
-           class="text-gray-600 hover:text-blue-500 px-1 py-2 text-sm font-medium transition-colors">
-           Accueil
+           class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
+           {{ settings.header?.menuHome || 'Accueil' }}
         </a>
         <a routerLink="/evenements" 
            routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
-           class="text-gray-600 hover:text-blue-500 px-1 py-2 text-sm font-medium transition-colors">
-           Événements
+           class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
+           {{ settings.header?.menuEvents || 'Événements' }}
         </a>
         <a routerLink="/reservations" 
            routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
-           class="text-gray-600 hover:text-blue-500 px-1 py-2 text-sm font-medium transition-colors">
-           Réservations
+           class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
+           {{ settings.header?.menuReservations || 'Réservations' }}
         </a>
         <a routerLink="/contact" 
            routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
-           class="text-gray-600 hover:text-blue-500 px-1 py-2 text-sm font-medium transition-colors">
-           Contact
+           class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
+            {{ settings.header?.menuContact || 'Contact' }}
         </a>
 
         <ng-container *ngIf="user$ | async as user; else loginBtn">
-          <div class="flex items-center gap-4">
-             <span class="text-xs text-gray-400 hidden lg:block">{{ user.email }}</span>
-             <button (click)="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-               Logout
-             </button>
-             <a routerLink="/admin" class="text-gray-500 hover:text-blue-600">
-               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="flex items-center gap-3 border-l pl-4 ml-2 border-gray-200">
+             <a routerLink="/admin" class="text-gray-500 hover:text-blue-600" title="Administration">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                </svg>
              </a>
+             <button (click)="logout()" class="text-red-500 hover:text-red-700" title="Déconnexion">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+               </svg>
+             </button>
           </div>
         </ng-container>
-
-        <ng-template #loginBtn>
-          <a routerLink="/login" class="text-gray-500 hover:text-blue-600 font-medium text-sm flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-            </svg>
-            Admin Login
-          </a>
-        </ng-template>
+        <ng-template #loginBtn></ng-template>
       </nav>
 
       <div class="flex items-center md:hidden">
-        <button (click)="toggleMenu()" type="button" class="text-gray-600 hover:text-gray-900 focus:outline-none">
+        <button (click)="toggleMenu()" type="button" class="text-gray-600 hover:text-gray-900 focus:outline-none p-2">
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path *ngIf="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             <path *ngIf="isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -3822,30 +4839,29 @@ Lignes:       87
     </div>
   </div>
 
-  <div class="md:hidden bg-white border-t border-gray-100" *ngIf="isMenuOpen">
+  <div class="md:hidden bg-white border-t border-gray-100 shadow-lg absolute w-full left-0 top-12" *ngIf="isMenuOpen">
     <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col">
-      <a routerLink="/" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" [routerLinkActiveOptions]="{exact: true}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Accueil</a>
-      <a routerLink="/evenements" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Événements</a>
-      <a routerLink="/reservations" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Réservations</a>
-      <a routerLink="/contact" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Contact</a>
+      <a routerLink="/" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" [routerLinkActiveOptions]="{exact: true}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuHome || 'Accueil' }}</a>
+      <a routerLink="/evenements" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuEvents || 'Événements' }}</a>
+      <a routerLink="/reservations" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuReservations || 'Réservations' }}</a>
+      <a routerLink="/contact" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuContact || 'Contact' }}</a>
       
       <div class="border-t border-gray-200 mt-2 pt-2">
          <ng-container *ngIf="user$ | async as user; else mobileLogin">
-            <div class="px-3 py-2 text-sm text-gray-500">Connecté en tant que {{ user.email }}</div>
+            <a routerLink="/admin" (click)="closeMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-blue-50">Administration</a>
             <button (click)="logout()" class="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">Déconnexion</button>
          </ng-container>
          <ng-template #mobileLogin>
-            <a routerLink="/login" (click)="closeMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-500 hover:text-gray-900">Admin Login</a>
+            <a routerLink="/admin-login" (click)="closeMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-400 hover:text-gray-900 text-xs">Admin Access</a>
          </ng-template>
       </div>
     </div>
   </div>
 </header>
-<div class="h-16"></div>
 
 ====================================
 FICHIER: ./src/app/components/hero-slider/hero-slider.component.html
-Lignes:       56
+Lignes:       49
 ====================================
 
 <div class="relative w-full min-h-screen overflow-hidden bg-gray-900 group">
@@ -3857,52 +4873,45 @@ Lignes:       56
         
         <div class="absolute inset-0 w-full h-[120%] -top-[10%]"
              [style.transform]="'translate3d(0, ' + (scrollY * 0.5) + 'px, 0)'">
-          <img [src]="slide.image" 
+          <img [src]="slide.imageUrl" 
                [alt]="slide.title"
-               class="w-full h-full object-cover opacity-90 brightness-75">
+               class="w-full h-full object-cover">
         </div>
 
-        <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60"></div>
+        <div class="absolute inset-0 bg-black/40"></div>
 
-        <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4 z-10">
-          <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 drop-shadow-lg tracking-wide animate-fade-in-up">
-            {{ slide.title | uppercase }}
+        <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
+          
+          <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-wide animate-fade-in-up uppercase text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
+            {{ slide.title }}
           </h1>
-          <p class="text-xl md:text-2xl font-light tracking-widest drop-shadow-md animate-fade-in-up delay-200">
+          
+          <p class="text-xl md:text-2xl font-light tracking-widest animate-fade-in-up delay-200 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
             {{ slide.subtitle }}
           </p>
           
-          <button class="mt-8 px-8 py-3 border-2 border-white text-white font-semibold rounded hover:bg-white hover:text-gray-900 transition-all duration-300 animate-fade-in-up delay-300"
-                  (click)="goToSlide(1)"> DÉCOUVRIR
-          </button>
+          <a routerLink="/evenements" 
+             class="mt-8 px-8 py-3 border-2 border-white text-white font-semibold rounded hover:bg-white hover:text-gray-900 transition-all duration-300 animate-fade-in-up delay-300 shadow-lg cursor-pointer inline-block no-underline">
+             DÉCOUVRIR
+          </a>
+
         </div>
       </div>
     </ng-container>
 
   </div>
 
-  <button (click)="prevSlide()" 
-          class="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/20 text-white hover:bg-white/20 transition-all backdrop-blur-sm md:opacity-0 md:group-hover:opacity-100">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-    </svg>
+  <button (click)="prevSlide()" class="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/30 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-all cursor-pointer">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
   </button>
 
-  <button (click)="nextSlide()" 
-          class="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/20 text-white hover:bg-white/20 transition-all backdrop-blur-sm md:opacity-0 md:group-hover:opacity-100">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-    </svg>
+  <button (click)="nextSlide()" class="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/30 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-all cursor-pointer">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
   </button>
 
   <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-3">
-    <button *ngFor="let slide of slides; let i = index"
-            (click)="goToSlide(i)"
-            class="w-3 h-3 rounded-full transition-all duration-300 shadow-sm"
-            [ngClass]="i === currentIndex ? 'bg-white scale-125 w-8' : 'bg-white/50 hover:bg-white/80'">
-    </button>
+    <button *ngFor="let slide of slides; let i = index" (click)="goToSlide(i)" class="w-3 h-3 rounded-full transition-all duration-300 shadow-sm border border-black/20 cursor-pointer" [ngClass]="i === currentIndex ? 'bg-white scale-125 w-8' : 'bg-white/50 hover:bg-white/80'"></button>
   </div>
-
 </div>
 
 ====================================
@@ -4169,7 +5178,7 @@ Lignes:      172
 
 ====================================
 FICHIER: ./src/app/pages/evenements/evenements.component.html
-Lignes:      164
+Lignes:      163
 ====================================
 
 <div class="min-h-screen bg-gray-50 pb-20">
@@ -4183,8 +5192,8 @@ Lignes:      164
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
-    <div class="bg-white rounded-lg shadow-lg p-4 flex flex-wrap justify-center gap-4">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+    <div class="bg-white rounded-lg shadow-sm p-4 flex flex-wrap justify-center gap-4 border border-gray-100">
       <button (click)="applyFilter('all')" 
               [class]="currentFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
               class="px-6 py-2 rounded-full font-medium transition-colors duration-200">
@@ -4203,7 +5212,7 @@ Lignes:      164
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
     
     <div *ngIf="isLoading" class="flex justify-center py-20">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -4292,7 +5301,6 @@ Lignes:      164
       </div>
 
       <div class="p-6 sm:p-8">
-        
         <div class="prose max-w-none text-gray-700 mb-8 whitespace-pre-wrap">
           {{ selectedEvent.description }}
         </div>
@@ -4339,7 +5347,7 @@ Lignes:      164
 
 ====================================
 FICHIER: ./src/app/pages/home/home.component.html
-Lignes:      128
+Lignes:      214
 ====================================
 
 <app-hero-slider></app-hero-slider>
@@ -4347,93 +5355,121 @@ Lignes:      128
 <section class="py-16 md:py-24 bg-white overflow-hidden">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <ng-container *ngIf="settings$ | async as settings; else loadingSettings">
-      <div class="flex flex-col lg:flex-row items-center gap-12">
-        
-        <div class="w-full lg:w-1/2 relative group">
-          <div class="absolute -inset-4 bg-blue-100 rounded-xl transform -rotate-2 transition-transform group-hover:rotate-0"></div>
-          <img src="https://pplx-res.cloudinary.com/image/upload/v1765513253/search_images/1ae70ea58b03bdb7ef99b684e9f870dd1c50316a.jpg" 
-               alt="Kyranis Park Présentation" 
-               class="relative rounded-lg shadow-2xl w-full h-[400px] object-cover transition-transform duration-500 hover:scale-[1.02]">
-        </div>
-
-        <div class="w-full lg:w-1/2">
+      <div class="max-w-4xl mx-auto text-center">
+        <div class="w-full">
           <h2 class="text-blue-600 font-semibold tracking-wide uppercase text-sm mb-2">Bienvenue à Kerkennah</h2>
           <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Découvrez {{ settings.businessName || 'Kyranis Park' }}</h3>
-          
           <div class="text-gray-600 text-lg leading-relaxed mb-8 whitespace-pre-wrap font-light">
-            {{ settings.homePageDescription || 'Un lieu unique où la nature rencontre le confort. Profitez de nos excursions en mer et de notre espace événementiel.' }}
+            {{ settings.homePageDescription || 'Un lieu unique où la nature rencontre le confort.\nProfitez de nos excursions en mer et de notre espace événementiel.' }}
           </div>
-
-          <div class="flex flex-col sm:flex-row gap-4">
-            <a routerLink="/reservations" class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors text-center">
-              Réserver Maintenant
+          <div class="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
+            <a routerLink="/reservations" [queryParams]="{type: 'boat'}" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors text-center flex items-center justify-center">
+               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Réserver un Bateau
             </a>
-            <a routerLink="/evenements" class="px-8 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-blue-600 hover:text-blue-600 transition-colors text-center">
-              En Savoir Plus
+            <a routerLink="/reservations" [queryParams]="{type: 'park'}" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-colors text-center flex items-center justify-center">
+               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> Réserver l'Espace Privé
             </a>
+            <a routerLink="/contact" class="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors text-center">Nous Contacter</a>
+            <button (click)="openFeedbackModal()" class="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition-colors text-center flex items-center justify-center">
+               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg> Donner votre avis
+            </button>
           </div>
         </div>
       </div>
     </ng-container>
-    
     <ng-template #loadingSettings>
-      <div class="animate-pulse flex space-x-4 h-64 items-center justify-center">
-        <div class="text-gray-400">Chargement de la présentation...</div>
-      </div>
+      <div class="animate-pulse flex space-x-4 h-64 items-center justify-center"><div class="text-gray-400">Chargement...</div></div>
     </ng-template>
   </div>
 </section>
 
-<section class="py-16 bg-gray-50">
+<section class="py-16 bg-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-12">
-      <h2 class="text-3xl font-bold text-gray-900">Notre Galerie</h2>
-      <p class="mt-4 text-gray-600">Quelques instants capturés au parc et en mer</p>
+    <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+      <div class="text-center md:text-left">
+        <h2 class="text-3xl font-bold text-gray-900">Événements</h2>
+        <p class="mt-4 text-gray-600">Nos prochains événements à ne pas manquer</p>
+      </div>
+      <a routerLink="/evenements" class="hidden md:inline-flex items-center text-blue-600 font-semibold hover:text-blue-800 transition-colors mt-4 md:mt-0">
+        Voir tout l'agenda <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
     </div>
-
-    <ng-container *ngIf="parkImages$ | async as images">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div *ngFor="let img of images; let i = index" 
-             class="relative group overflow-hidden rounded-lg aspect-square cursor-pointer shadow-md"
-             (click)="openLightbox(img)">
-          <img [src]="img" 
-               loading="lazy"
-               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-               [alt]="'Galerie image ' + i">
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-4 group-hover:translate-y-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-            </svg>
+    <ng-container *ngIf="upcomingEvents$ | async as events">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div *ngFor="let event of events" class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
+          <div class="relative h-48 overflow-hidden">
+            <img [src]="getCoverImage(event)" [alt]="event.title" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+            <div class="absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded shadow">{{ event.date | date:'dd MMM' }}</div>
+          </div>
+          <div class="p-6 flex flex-col flex-grow">
+            <div class="text-xs text-gray-500 mb-2 uppercase tracking-wide flex items-center">
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>{{ event.location }}
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{{ event.title }}</h3>
+            <p class="text-gray-600 text-sm line-clamp-2 mb-4 flex-grow">{{ event.description }}</p>
+            <a routerLink="/evenements" class="text-blue-600 font-medium text-sm hover:underline mt-auto">En savoir plus &rarr;</a>
           </div>
         </div>
       </div>
-      
-      <div *ngIf="images.length === 0" class="text-center text-gray-500 py-10">
-        Aucune image disponible pour le moment.
+      <div *ngIf="events.length === 0" class="text-center py-10 bg-white rounded-lg shadow-sm border border-gray-100">
+        <p class="text-gray-500">Aucun événement prévu prochainement.</p>
+        <a routerLink="/contact" class="text-blue-600 font-semibold text-sm mt-2 inline-block">Organiser le vôtre ?</a>
+      </div>
+      <div class="text-center mt-8 md:hidden">
+         <a routerLink="/evenements" class="inline-flex items-center text-blue-600 font-semibold hover:text-blue-800 transition-colors">Voir tout l'agenda &rarr;</a>
       </div>
     </ng-container>
   </div>
 </section>
 
-<section class="py-16 bg-white">
+<section class="py-16 bg-white border-t border-gray-100">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Ce que disent nos visiteurs</h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div *ngFor="let temoignage of testimonials" class="bg-gray-50 p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-        <div class="flex text-yellow-400 mb-4">
-          <ng-container *ngFor="let star of [1,2,3,4,5]">
-            <svg *ngIf="star <= temoignage.rating" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          </ng-container>
-        </div>
-        <p class="text-gray-600 italic mb-6">"{{ temoignage.text }}"</p>
-        <div>
-          <h4 class="font-bold text-gray-900">{{ temoignage.name }}</h4>
-          <span class="text-sm text-gray-500">{{ temoignage.role }}</span>
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-gray-900">Nos Galeries</h2>
+      <p class="mt-4 text-gray-600">Découvrez nos albums photos par thématique</p>
+    </div>
+    <ng-container *ngIf="parkGalleries$ | async as galleries">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div *ngFor="let gallery of galleries" class="group cursor-pointer bg-gray-50 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" (click)="openGallery(gallery)">
+          <div class="relative h-64 overflow-hidden">
+            <img *ngIf="gallery.images && gallery.images.length > 0" [src]="gallery.images[0]" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" [alt]="gallery.name">
+            <div *ngIf="!gallery.images || gallery.images.length === 0" class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">NO IMAGE</div>
+            <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+            <div class="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">{{ gallery.images.length }} Photos</div>
+          </div>
+          <div class="p-6 relative">
+            <h3 class="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{{ gallery.name }}</h3>
+            <p class="text-sm text-gray-500 mt-2 flex items-center"><span class="text-blue-500 mr-2">Voir l'album</span> &rarr;</p>
+          </div>
         </div>
       </div>
+      <div *ngIf="galleries.length === 0" class="text-center text-gray-500 py-10">Aucun album disponible.</div>
+    </ng-container>
+  </div>
+</section>
+
+<section class="py-16 bg-blue-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Ce que disent nos visiteurs</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <ng-container *ngIf="approvedFeedbacks$ | async as feedbacks">
+        <div *ngFor="let fb of feedbacks" class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div class="flex text-yellow-400 mb-4">
+            <ng-container *ngFor="let star of [1,2,3,4,5]">
+              <svg *ngIf="star <= fb.rating" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+            </ng-container>
+          </div>
+          <p class="text-gray-600 italic mb-6">"{{ fb.message }}"</p>
+          <div>
+            <h4 class="font-bold text-gray-900">{{ fb.name }}</h4>
+            <span class="text-sm text-gray-500">{{ fb.createdAt | date:'mediumDate' }}</span>
+          </div>
+        </div>
+        <div *ngIf="feedbacks.length === 0" class="col-span-3 text-center py-8">
+          <p class="text-gray-500 italic text-lg mb-4">Aucun avis validé pour le moment.</p>
+          <button (click)="openFeedbackModal()" class="text-blue-600 font-semibold hover:underline">Soyez le premier à donner votre avis !</button>
+        </div>
+      </ng-container>
     </div>
   </div>
 </section>
@@ -4441,34 +5477,92 @@ Lignes:      128
 <section class="py-20 bg-gradient-to-r from-blue-900 to-blue-700 text-center text-white">
   <div class="max-w-4xl mx-auto px-4">
     <h2 class="text-3xl md:text-5xl font-bold mb-6">Prêt pour l'aventure ?</h2>
-    <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-      Que ce soit pour une journée en mer ou une soirée privée, réservez votre moment d'exception dès aujourd'hui.
-    </p>
+    <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">Que ce soit pour une journée en mer ou une soirée privée, réservez votre moment d'exception dès aujourd'hui.</p>
     <div class="flex flex-col sm:flex-row justify-center gap-4">
-      <a routerLink="/reservations" [queryParams]="{type: 'boat'}" class="px-8 py-4 bg-white text-blue-900 font-bold rounded-lg hover:bg-gray-100 transition-colors shadow-lg">
-        Réserver un Bateau
-      </a>
-      <a routerLink="/reservations" [queryParams]="{type: 'park'}" class="px-8 py-4 border-2 border-white text-white font-bold rounded-lg hover:bg-white/10 transition-colors">
-        Réserver l'Espace Privé
-      </a>
+      <a routerLink="/reservations" [queryParams]="{type: 'boat'}" class="px-8 py-4 bg-white text-blue-900 font-bold rounded-lg hover:bg-gray-100 transition-colors shadow-lg">Réserver un Bateau</a>
+      <a routerLink="/reservations" [queryParams]="{type: 'park'}" class="px-8 py-4 border-2 border-white text-white font-bold rounded-lg hover:bg-white/10 transition-colors">Réserver l'Espace Privé</a>
     </div>
   </div>
 </section>
 
-<div *ngIf="lightboxOpen" 
-     class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 transition-opacity duration-300"
-     (click)="closeLightbox()">
-  
-  <button class="absolute top-4 right-4 text-white hover:text-gray-300 p-2" (click)="closeLightbox()">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  </button>
+<div *ngIf="isFeedbackModalOpen" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeFeedbackModal()"></div>
+    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+      <form [formGroup]="feedbackForm" (ngSubmit)="submitFeedback()">
+        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Laissez votre avis</h3>
+          <div class="space-y-4">
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Votre Nom</label>
+              <input type="text" formControlName="name" 
+                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+                     [class.border-red-500]="isFieldInvalid('name')">
+              <p *ngIf="isFieldInvalid('name')" class="text-red-500 text-xs mt-1">Le nom est requis (min 3 car.)</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
+              <div class="flex gap-2">
+                <button type="button" *ngFor="let star of stars" (click)="setRating(star)" class="focus:outline-none transition-transform hover:scale-110">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" [class.text-yellow-400]="feedbackForm.get('rating')?.value >= star" [class.text-gray-300]="feedbackForm.get('rating')?.value < star" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-  <img [src]="currentImage" 
-       alt="Full size" 
-       class="max-w-full max-h-[90vh] object-contain rounded-md shadow-2xl"
-       (click)="$event.stopPropagation()">
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Message (Min 10 caractères)</label>
+              <textarea formControlName="message" rows="3" 
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
+                        [class.border-red-500]="isFieldInvalid('message')"></textarea>
+              <p *ngIf="isFieldInvalid('message')" class="text-red-500 text-xs mt-1">Message trop court.</p>
+            </div>
+
+            <div class="bg-gray-50 p-3 rounded border border-gray-200">
+              <label class="block text-sm font-bold text-gray-700 mb-1">Combien font {{captchaA}} + {{captchaB}} ?</label>
+              <input type="number" formControlName="captcha" placeholder="Votre réponse" 
+                     class="block w-24 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500"
+                     [class.border-red-500]="isFieldInvalid('captcha')">
+              <p *ngIf="isFieldInvalid('captcha')" class="text-red-500 text-xs mt-1">Calcul requis.</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse items-center gap-3">
+          <button type="submit" 
+                  [disabled]="isSubmittingFeedback" 
+                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            {{ isSubmittingFeedback ? 'Envoi...' : 'Envoyer' }}
+          </button>
+          <button type="button" (click)="closeFeedbackModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+            Annuler
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="lightboxOpen && selectedGallery" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 transition-opacity duration-300" (click)="closeLightbox()">
+  <button class="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-[110]" (click)="closeLightbox()">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+  </button>
+  <button *ngIf="selectedGallery.images.length > 1" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block hover:bg-black/20 rounded-full transition-all" (click)="prevImage($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+  </button>
+  <button *ngIf="selectedGallery.images.length > 1" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block hover:bg-black/20 rounded-full transition-all" (click)="nextImage($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+  </button>
+  <div class="relative max-w-7xl w-full h-full flex flex-col items-center justify-center" (click)="$event.stopPropagation()">
+    <img [src]="selectedGallery.images[currentImageIndex]" alt="Gallery Image" class="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl animate-fade-in select-none">
+    <div class="absolute bottom-4 left-0 right-0 text-center text-white/80 pointer-events-none">
+      <p class="text-lg font-bold mb-1">{{ selectedGallery.name }}</p>
+      <p class="text-sm">{{ currentImageIndex + 1 }} / {{ selectedGallery.images.length }}</p>
+    </div>
+  </div>
 </div>
 
 ====================================
@@ -4855,6 +5949,29 @@ Lignes:        3
 }
 
 ====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-feedback/manage-feedback.component.scss
+Lignes:        1
+====================================
+
+:host { display: block; }
+
+====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-gallery/manage-gallery.component.scss
+Lignes:        3
+====================================
+
+:host {
+  display: block;
+}
+
+====================================
+FICHIER: ./src/app/components/admin-dashboard/manage-hero/manage-hero.component.scss
+Lignes:        1
+====================================
+
+:host { display: block; }
+
+====================================
 FICHIER: ./src/app/components/admin-dashboard/manage-reservations/manage-reservations.component.scss
 Lignes:        3
 ====================================
@@ -4874,11 +5991,15 @@ Lignes:        3
 
 ====================================
 FICHIER: ./src/app/components/footer/footer.component.scss
-Lignes:        3
+Lignes:        7
 ====================================
 
 :host {
-  display: block;
+  display: block;        /* OBLIGATOIRE pour que le footer ait une hauteur */
+  width: 100%;           /* Prend toute la largeur */
+  position: relative;    /* Permet le z-index */
+  z-index: 50;           /* Au-dessus du reste */
+  background-color: #111827; /* Gris très foncé (Tailwind gray-900) pour éviter le blanc */
 }
 
 ====================================
@@ -5227,7 +6348,7 @@ Lignes:      175
 ====================================
   RÉSUMÉ
 ====================================
-Total fichiers: 77
-Total lignes: 4644
-Date: Fri Dec 12 14:43:10 CET 2025
+Total fichiers: 88
+Total lignes: 5685
+Date: Fri Dec 12 19:05:58 CET 2025
 ====================================

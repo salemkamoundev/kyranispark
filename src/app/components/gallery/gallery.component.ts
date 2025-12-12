@@ -17,7 +17,7 @@ export class GalleryComponent implements OnChanges {
   @Input() images: string[] = [];
   @Input() videos: string[] = [];
 
-  // Liste unifiée pour la navigation (prev/next entre images et vidéos)
+  // Liste combinée pour la navigation
   items: MediaItem[] = [];
   
   // État de la lightbox
@@ -25,23 +25,19 @@ export class GalleryComponent implements OnChanges {
   currentIndex = 0;
 
   ngOnChanges(changes: SimpleChanges): void {
-    // À chaque changement des inputs, on recrée la liste unifiée
+    // Reconstruire la liste si les inputs changent
     if (changes['images'] || changes['videos']) {
-      this.buildMediaList();
+      this.items = [
+        ...(this.images || []).map(url => ({ type: 'image' as const, url })),
+        ...(this.videos || []).map(url => ({ type: 'video' as const, url }))
+      ];
     }
-  }
-
-  private buildMediaList() {
-    this.items = [
-      ...(this.images || []).map(url => ({ type: 'image' as const, url })),
-      ...(this.videos || []).map(url => ({ type: 'video' as const, url }))
-    ];
   }
 
   openLightbox(index: number): void {
     this.currentIndex = index;
     this.isOpen = true;
-    document.body.style.overflow = 'hidden'; // Bloque le scroll arrière-plan
+    document.body.style.overflow = 'hidden'; // Bloque le scroll du site
   }
 
   closeLightbox(): void {
@@ -50,6 +46,7 @@ export class GalleryComponent implements OnChanges {
   }
 
   next(): void {
+    if (this.items.length === 0) return;
     if (this.currentIndex < this.items.length - 1) {
       this.currentIndex++;
     } else {
@@ -58,6 +55,7 @@ export class GalleryComponent implements OnChanges {
   }
 
   prev(): void {
+    if (this.items.length === 0) return;
     if (this.currentIndex > 0) {
       this.currentIndex--;
     } else {
@@ -65,22 +63,17 @@ export class GalleryComponent implements OnChanges {
     }
   }
 
-  // Fermeture avec la touche ESC
-  @HostListener('window:keydown.escape', [])
-  onKeydownHandler() {
-    if (this.isOpen) {
+  // --- GESTION CLAVIER ---
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (!this.isOpen) return;
+
+    if (event.key === 'Escape') {
       this.closeLightbox();
+    } else if (event.key === 'ArrowRight') {
+      this.next();
+    } else if (event.key === 'ArrowLeft') {
+      this.prev();
     }
-  }
-
-  // Navigation clavier flèches
-  @HostListener('window:keydown.arrowright', [])
-  onArrowRight() {
-    if (this.isOpen) this.next();
-  }
-
-  @HostListener('window:keydown.arrowleft', [])
-  onArrowLeft() {
-    if (this.isOpen) this.prev();
   }
 }

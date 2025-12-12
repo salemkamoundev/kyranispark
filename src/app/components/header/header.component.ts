@@ -1,10 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router'; // Import NavigationEnd
 import { FirebaseService } from '../../services/firebase.service';
 import { FirestoreService } from '../../services/firestore.service';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { filter } from 'rxjs/operators'; // Import filter
 import { User } from '@angular/fire/auth';
 import { AppSettings } from '../../models';
 
@@ -15,7 +15,7 @@ import { AppSettings } from '../../models';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss']
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   private firebaseService = inject(FirebaseService);
   private firestoreService = inject(FirestoreService);
   private router = inject(Router);
@@ -23,19 +23,43 @@ export class HeaderComponent {
   user$: Observable<User | null> = this.firebaseService.user$;
   isMenuOpen = false;
 
-  // Récupération des settings avec des valeurs par défaut pour éviter l'écran blanc
-  settings$: Observable<AppSettings> = this.firestoreService.getSettings().pipe(
-    map(s => s || {
-      businessName: 'Kyranis Park',
-      header: {
-        logoText: 'KYRANIS PARK',
-        menuHome: 'Accueil',
-        menuEvents: 'Événements',
-        menuReservations: 'Réservations',
-        menuContact: 'Contact'
-      }
-    } as AppSettings)
-  );
+  settings: AppSettings = {
+    businessName: 'Kyranis Park',
+    address: '',
+    phone: '',
+    email: '',
+    facebookUrl: '',
+    homePageDescription: '',
+    parkDescription: '',
+    googleMapsEmbed: '',
+    header: {
+      logoText: 'KYRANIS PARK',
+      menuHome: 'Accueil',
+      menuEvents: 'Événements',
+      menuReservations: 'Réservations',
+      menuContact: 'Contact'
+    }
+  };
+
+  ngOnInit() {
+    // 1. Chargement des paramètres
+    this.firestoreService.getSettings().subscribe({
+      next: (data) => {
+        if (data) {
+          this.settings = { ...this.settings, ...data };
+        }
+      },
+      error: (err) => console.error('Erreur chargement header', err)
+    });
+
+    // 2. FERMETURE AUTOMATIQUE (Sécurité)
+    // Écoute chaque changement de page pour fermer le menu
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.isMenuOpen = false;
+    });
+  }
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;

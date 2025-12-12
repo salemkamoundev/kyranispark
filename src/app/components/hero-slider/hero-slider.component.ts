@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, HostListener, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterModule } from '@angular/router'; // AJOUT IMPORTANT
 import { trigger, transition, style, animate, query, group } from '@angular/animations';
 import { FirestoreService } from '../../services/firestore.service';
 import { HeroSlide } from '../../models';
@@ -7,7 +8,7 @@ import { HeroSlide } from '../../models';
 @Component({
   selector: 'app-hero-slider',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule], // AJOUT DANS LES IMPORTS
   templateUrl: './hero-slider.component.html',
   styleUrls: ['./hero-slider.component.scss'],
   animations: [
@@ -40,31 +41,11 @@ import { HeroSlide } from '../../models';
 export class HeroSliderComponent implements OnInit, OnDestroy {
   private firestoreService = inject(FirestoreService);
 
-  // Images statiques de secours (Fallback)
   defaultSlides: HeroSlide[] = [
-    {
-      imageUrl: 'https://pplx-res.cloudinary.com/image/upload/v1765513253/search_images/1ae70ea58b03bdb7ef99b684e9f870dd1c50316a.jpg',
-      title: 'Bienvenue à Kyranis Park',
-      subtitle: 'L\'évasion au cœur des îles Kerkennah',
-      createdAt: new Date()
-    },
-    {
-      imageUrl: 'https://pplx-res.cloudinary.com/image/upload/v1765513254/search_images/767fece22dcfe0ef399c8e99d9ed66a010bd6e11.jpg',
-      title: 'Des Moments Inoubliables',
-      subtitle: 'Célébrez vos événements dans un cadre unique',
-      createdAt: new Date()
-    },
-    {
-      imageUrl: 'https://pplx-res.cloudinary.com/image/upload/v1763880066/search_images/f9a3f2ffd5ad5d033ed42d88e8eb078c1dc7cd6b.jpg',
-      title: 'Excursions en Bateau',
-      subtitle: 'Découvrez la beauté maritime de l\'archipel',
-      createdAt: new Date()
-    }
+
   ];
 
-  // IMPORTANT: On initialise avec les défauts pour éviter l'écran vide au chargement
   slides: HeroSlide[] = [...this.defaultSlides];
-  
   currentIndex = 0;
   intervalId: any;
   scrollY = 0;
@@ -75,24 +56,17 @@ export class HeroSliderComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    // On écoute Firestore
     this.firestoreService.getHeroSlides().subscribe({
       next: (data) => {
-        // Si on reçoit des données valides, on remplace les défauts
         if (data && data.length > 0) {
           this.slides = data;
-          // Réinitialiser l'index si on dépasse la nouvelle longueur
           if (this.currentIndex >= this.slides.length) {
             this.currentIndex = 0;
           }
         }
-        // Sinon, on garde this.defaultSlides (déjà set)
         this.resetTimer();
       },
-      error: (err) => {
-        console.error('Erreur chargement slider:', err);
-        // En cas d'erreur, on garde les défauts
-      }
+      error: (err) => console.error(err)
     });
 
     this.startAutoPlay();
