@@ -1,232 +1,39 @@
-#!/bin/bash
+# 1. Annuler tous les changements
+git checkout -- src/app/
 
-echo "=================================================="
-echo "  CORRECTION BOUTONS GALERIE (VISIBILITÉ FORCÉE)"
-echo "=================================================="
+# 2. Supprimer les imports incorrects des composants admin
+find src/app/components/admin-dashboard -name "*.ts" -type f -exec sed -i.bak '/import.*FooterComponent.*from.*components\/footer/d' {} \;
+find src/app/components/admin-dashboard -name "*.bak" -delete
 
-# On réécrit le HTML de la page d'accueil pour mettre à jour UNIQUEMENT la partie Lightbox
-# avec des boutons bien visibles et stylisés.
+# 3. Supprimer FooterComponent des imports des composants admin
+find src/app/components/admin-dashboard -name "*.ts" -type f -exec sed -i.bak 's/, FooterComponent//g; s/FooterComponent, //g; s/FooterComponent//g' {} \;
+find src/app/components/admin-dashboard -name "*.bak" -delete
 
-cat << 'EOF' > ./src/app/pages/home/home.component.html
-<app-hero-slider></app-hero-slider>
+# 4. Supprimer <app-footer> du HTML des composants admin
+find src/app/components/admin-dashboard -name "*.html" -type f -exec sed -i.bak '/<app-footer><\/app-footer>/d' {} \;
+find src/app/components/admin-dashboard -name "*.bak" -delete
 
-<section class="py-16 md:py-24 bg-white overflow-hidden">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <ng-container *ngIf="settings$ | async as settings; else loadingSettings">
-      <div class="max-w-4xl mx-auto text-center">
-        <div class="w-full">
-          <h2 class="text-blue-600 font-semibold tracking-wide uppercase text-sm mb-2">Bienvenue à Kerkennah</h2>
-          <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Découvrez {{ settings.businessName || 'Kyranis Park' }}</h3>
-          <div class="text-gray-600 text-lg leading-relaxed mb-8 whitespace-pre-wrap font-light">
-            {{ settings.homePageDescription || 'Un lieu unique où la nature rencontre le confort.\nProfitez de nos excursions en mer et de notre espace événementiel.' }}
-          </div>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
-            <a routerLink="/reservations" [queryParams]="{type: 'boat'}" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors text-center flex items-center justify-center">
-               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Réserver un Bateau
-            </a>
-            <a routerLink="/reservations" [queryParams]="{type: 'park'}" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-colors text-center flex items-center justify-center">
-               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> Réserver l'Espace Privé
-            </a>
-            <a routerLink="/contact" class="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors text-center">Nous Contacter</a>
-            <button (click)="openFeedbackModal()" class="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition-colors text-center flex items-center justify-center">
-               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg> Donner votre avis
-            </button>
-          </div>
-        </div>
-      </div>
-    </ng-container>
-    <ng-template #loadingSettings>
-      <div class="animate-pulse flex space-x-4 h-64 items-center justify-center"><div class="text-gray-400">Chargement...</div></div>
-    </ng-template>
-  </div>
-</section>
+# 5. Ajouter le footer SEULEMENT aux pages
+for page_dir in src/app/pages/*/; do
+    page_name=$(basename "$page_dir")
+    if [ "$page_name" != "page-not-found" ]; then
+        html_file="$page_dir${page_name}.component.html"
+        ts_file="$page_dir${page_name}.component.ts"
+        
+        if [ -f "$html_file" ] && ! grep -q "<app-footer>" "$html_file"; then
+            echo "<app-footer></app-footer>" >> "$html_file"
+        fi
+        
+        if [ -f "$ts_file" ] && ! grep -q "FooterComponent" "$ts_file"; then
+            sed -i.bak "/@Component/{i\\
+import { FooterComponent } from '../../components/footer/footer.component';
+}" "$ts_file"
+            sed -i.bak 's/imports: \(\[[^]]*\)\]/imports: \1, FooterComponent]/' "$ts_file"
+            rm -f "${ts_file}.bak"
+        fi
+    fi
+done
+find src/app/pages -name "*.bak" -delete
 
-<section class="py-16 bg-blue-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-12">
-      <h2 class="text-3xl font-bold text-gray-900">Événements</h2>
-      <p class="mt-4 text-gray-600">Nos prochains événements à ne pas manquer</p>
-      
-      <a routerLink="/evenements" class="hidden md:inline-flex items-center text-blue-600 font-semibold hover:text-blue-800 transition-colors mt-4">
-        Voir tout l'agenda <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-      </a>
-    </div>
-    <ng-container *ngIf="upcomingEvents$ | async as events">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div *ngFor="let event of events" class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col h-full">
-          <div class="relative h-48 overflow-hidden">
-            <img [src]="getCoverImage(event)" [alt]="event.title" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-            <div class="absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded shadow">{{ event.date | date:'dd MMM' }}</div>
-          </div>
-          <div class="p-6 flex flex-col flex-grow">
-            <div class="text-xs text-gray-500 mb-2 uppercase tracking-wide flex items-center">
-              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>{{ event.location }}
-            </div>
-            <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{{ event.title }}</h3>
-            <p class="text-gray-600 text-sm line-clamp-2 mb-4 flex-grow">{{ event.description }}</p>
-            <a routerLink="/evenements" class="text-blue-600 font-medium text-sm hover:underline mt-auto">En savoir plus &rarr;</a>
-          </div>
-        </div>
-      </div>
-      <div *ngIf="events.length === 0" class="text-center py-10 bg-white rounded-lg shadow-sm border border-gray-100">
-        <p class="text-gray-500">Aucun événement prévu prochainement.</p>
-        <a routerLink="/contact" class="text-blue-600 font-semibold text-sm mt-2 inline-block">Organiser le vôtre ?</a>
-      </div>
-      <div class="text-center mt-8 md:hidden">
-         <a routerLink="/evenements" class="inline-flex items-center text-blue-600 font-semibold hover:text-blue-800 transition-colors">Voir tout l'agenda &rarr;</a>
-      </div>
-    </ng-container>
-  </div>
-</section>
-
-<section class="py-16 bg-white border-t border-gray-100">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-12">
-      <h2 class="text-3xl font-bold text-gray-900">Nos Galeries</h2>
-      <p class="mt-4 text-gray-600">Découvrez nos albums photos par thématique</p>
-    </div>
-    <ng-container *ngIf="parkGalleries$ | async as galleries">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div *ngFor="let gallery of galleries" class="group cursor-pointer bg-gray-50 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" (click)="openGallery(gallery)">
-          <div class="relative h-64 overflow-hidden">
-            <img *ngIf="gallery.images && gallery.images.length > 0" [src]="gallery.images[0]" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" [alt]="gallery.name">
-            <div *ngIf="!gallery.images || gallery.images.length === 0" class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">NO IMAGE</div>
-            <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
-            <div class="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">{{ gallery.images.length }} Photos</div>
-          </div>
-          <div class="p-6 relative">
-            <h3 class="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{{ gallery.name }}</h3>
-            <p class="text-sm text-gray-500 mt-2 flex items-center"><span class="text-blue-500 mr-2">Voir l'album</span> &rarr;</p>
-          </div>
-        </div>
-      </div>
-      <div *ngIf="galleries.length === 0" class="text-center text-gray-500 py-10">Aucun album disponible.</div>
-    </ng-container>
-  </div>
-</section>
-
-<section class="py-16 bg-blue-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Ce que disent nos visiteurs</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <ng-container *ngIf="approvedFeedbacks$ | async as feedbacks">
-        <div *ngFor="let fb of feedbacks" class="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div class="flex text-yellow-400 mb-4">
-            <ng-container *ngFor="let star of [1,2,3,4,5]">
-              <svg *ngIf="star <= fb.rating" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-            </ng-container>
-          </div>
-          <p class="text-gray-600 italic mb-6">"{{ fb.message }}"</p>
-          <div>
-            <h4 class="font-bold text-gray-900">{{ fb.name }}</h4>
-            <span class="text-sm text-gray-500">{{ fb.createdAt | date:'mediumDate' }}</span>
-          </div>
-        </div>
-        <div *ngIf="feedbacks.length === 0" class="col-span-3 text-center py-8">
-          <p class="text-gray-500 italic text-lg mb-4">Aucun avis validé pour le moment.</p>
-          <button (click)="openFeedbackModal()" class="text-blue-600 font-semibold hover:underline">Soyez le premier à donner votre avis !</button>
-        </div>
-      </ng-container>
-    </div>
-  </div>
-</section>
-
-<section class="py-20 bg-gradient-to-r from-blue-900 to-blue-700 text-center text-white">
-  <div class="max-w-4xl mx-auto px-4">
-    <h2 class="text-3xl md:text-5xl font-bold mb-6">Prêt pour l'aventure ?</h2>
-    <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">Que ce soit pour une journée en mer ou une soirée privée, réservez votre moment d'exception dès aujourd'hui.</p>
-    <div class="flex flex-col sm:flex-row justify-center gap-4">
-      <a routerLink="/reservations" [queryParams]="{type: 'boat'}" class="px-8 py-4 bg-white text-blue-900 font-bold rounded-lg hover:bg-gray-100 transition-colors shadow-lg">Réserver un Bateau</a>
-      <a routerLink="/reservations" [queryParams]="{type: 'park'}" class="px-8 py-4 border-2 border-white text-white font-bold rounded-lg hover:bg-white/10 transition-colors">Réserver l'Espace Privé</a>
-    </div>
-  </div>
-</section>
-
-<div *ngIf="isFeedbackModalOpen" class="fixed inset-0 z-[100] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" (click)="closeFeedbackModal()"></div>
-    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
-      <form [formGroup]="feedbackForm" (ngSubmit)="submitFeedback()">
-        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Laissez votre avis</h3>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Votre Nom</label>
-              <input type="text" formControlName="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" [class.border-red-500]="isFieldInvalid('name')">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
-              <div class="flex gap-2">
-                <button type="button" *ngFor="let star of stars" (click)="setRating(star)" class="focus:outline-none transition-transform hover:scale-110">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" [class.text-yellow-400]="feedbackForm.get('rating')?.value >= star" [class.text-gray-300]="feedbackForm.get('rating')?.value < star" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Message (Min 10 caractères)</label>
-              <textarea formControlName="message" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" [class.border-red-500]="isFieldInvalid('message')"></textarea>
-            </div>
-            <div class="bg-gray-50 p-3 rounded border border-gray-200">
-              <label class="block text-sm font-bold text-gray-700 mb-1">Combien font {{captchaA}} + {{captchaB}} ?</label>
-              <input type="number" formControlName="captcha" placeholder="Votre réponse" class="block w-24 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500" [class.border-red-500]="isFieldInvalid('captcha')">
-            </div>
-          </div>
-        </div>
-        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse items-center gap-3">
-          <button type="submit" [disabled]="isSubmittingFeedback" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">{{ isSubmittingFeedback ? 'Envoi...' : 'Envoyer' }}</button>
-          <button type="button" (click)="closeFeedbackModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Annuler</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div *ngIf="isLightboxOpen" 
-     class="fixed inset-0 z-[150] bg-black/95 flex items-center justify-center backdrop-blur-md transition-opacity duration-300" 
-     (click)="closeLightbox()">
-  
-  <button class="absolute top-4 right-4 z-[160] p-3 text-white bg-black/50 hover:bg-red-600 rounded-full transition-colors border border-white/20" 
-          (click)="closeLightbox()">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  </button>
-
-  <button *ngIf="lightboxItems.length > 1"
-          class="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 z-[160] p-4 text-white bg-black/50 hover:bg-white/20 rounded-full transition-all border border-white/20" 
-          (click)="$event.stopPropagation(); prevMedia($event)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-    </svg>
-  </button>
-
-  <button *ngIf="lightboxItems.length > 1"
-          class="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 z-[160] p-4 text-white bg-black/50 hover:bg-white/20 rounded-full transition-all border border-white/20" 
-          (click)="$event.stopPropagation(); nextMedia($event)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-    </svg>
-  </button>
-
-  <div class="relative max-w-7xl w-full h-full flex flex-col items-center justify-center p-2" (click)="$event.stopPropagation()">
-    
-    <img *ngIf="lightboxItems[lightboxIndex].type === 'image'" 
-         [src]="lightboxItems[lightboxIndex].url" 
-         class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl animate-fade-in select-none">
-    
-    <video *ngIf="lightboxItems[lightboxIndex].type === 'video'" 
-           [src]="lightboxItems[lightboxIndex].url" 
-           controls autoplay
-           class="max-w-full max-h-[85vh] w-auto rounded shadow-2xl outline-none border border-gray-800">
-    </video>
-
-    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/90 text-sm bg-black/60 px-4 py-1 rounded-full border border-white/10 backdrop-blur-sm">
-      {{ lightboxIndex + 1 }} / {{ lightboxItems.length }}
-    </div>
-  </div>
-</div>
-EOF
-
-echo "Terminé. La Lightbox de la page d'accueil affiche maintenant clairement les boutons de navigation."
+# 6. Tester
+ng serve

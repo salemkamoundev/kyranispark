@@ -5,10 +5,11 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { FirestoreService } from '../../services/firestore.service';
 import { Reservation } from '../../models';
 
+import { FooterComponent } from '../../components/footer/footer.component';
 @Component({
   selector: 'app-reservations',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FooterComponent],
   templateUrl: './reservations.component.html',
   styleUrls: ['./reservations.component.scss']
 })

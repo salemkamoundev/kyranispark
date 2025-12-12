@@ -15,10 +15,11 @@ interface LightboxItem {
   url: string;
 }
 
+import { FooterComponent } from '../../components/footer/footer.component';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, HeroSliderComponent, DatePipe, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, HeroSliderComponent, DatePipe, ReactiveFormsModule, FooterComponent],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })

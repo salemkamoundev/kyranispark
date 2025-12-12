@@ -1,6 +1,6 @@
 ====================================
   Projet Angular - Code Source
-  Date: Fri Dec 12 19:05:57 CET 2025
+  Date: Fri Dec 12 21:33:00 CET 2025
 ====================================
 
 Arborescence du projet:
@@ -133,15 +133,13 @@ Arborescence du projet:
 
 ====================================
 FICHIER: ./src/app/app.component.ts
-Lignes:       56
+Lignes:       48
 ====================================
 
 import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterModule, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
-
-// Components
 import { HeaderComponent } from './components/header/header.component';
 import { FooterComponent } from './components/footer/footer.component';
 
@@ -150,11 +148,11 @@ import { FooterComponent } from './components/footer/footer.component';
   standalone: true,
   imports: [RouterOutlet, RouterModule, CommonModule, HeaderComponent, FooterComponent],
   template: `
-    <div class="flex flex-col min-h-screen relative bg-gray-50">
+    <div class="flex flex-col min-h-screen relative bg-gray-50 font-sans">
       
-      <app-header *ngIf="!isHomePage"></app-header>
+      <app-header class="z-50"></app-header>
 
-      <main class="flex-grow w-full" [class.pt-12]="!isHomePage"> 
+      <main class="flex-grow w-full pt-12"> 
         <router-outlet></router-outlet>
       </main>
 
@@ -162,7 +160,7 @@ import { FooterComponent } from './components/footer/footer.component';
 
       <a *ngIf="!isHomePage"
          routerLink="/" 
-         class="fixed bottom-6 left-6 z-[100] p-3 bg-white text-blue-600 rounded-full shadow-2xl border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 transform hover:scale-110 flex items-center justify-center group print:hidden cursor-pointer"
+         class="fixed bottom-6 left-6 z-[100] p-3 bg-white text-blue-600 rounded-full shadow-2xl border-2 border-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300 transform hover:scale-110 flex items-center justify-center group cursor-pointer print:hidden"
          title="Retour à l'accueil">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -175,19 +173,13 @@ import { FooterComponent } from './components/footer/footer.component';
 })
 export class AppComponent {
   private router = inject(Router);
-  
-  // Variable réactive pour savoir si on est sur la home
   isHomePage = false;
 
   constructor() {
-    // Détection changement d'URL
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
-      // Vérifie si l'URL est la racine '/'
       this.isHomePage = event.url === '/' || event.url === '/#';
-      
-      // Scroll en haut à chaque changement de page
       window.scrollTo(0, 0);
     });
   }
@@ -342,16 +334,16 @@ export class App {
 
 ====================================
 FICHIER: ./src/app/components/admin-dashboard/admin-dashboard.component.ts
-Lignes:       44
+Lignes:       58
 ====================================
 
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router'; // Import NavigationEnd
 import { AuthService } from '../../services/auth.service';
 import { FirestoreService } from '../../services/firestore.service';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, filter } from 'rxjs/operators'; // Import filter
 import { User } from '@angular/fire/auth';
 
 @Component({
@@ -361,27 +353,41 @@ import { User } from '@angular/fire/auth';
   templateUrl: './admin-dashboard.component.html',
   styleUrls: ['./admin-dashboard.component.scss']
 })
-export class AdminDashboardComponent {
+export class AdminDashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private firestoreService = inject(FirestoreService);
   private router = inject(Router);
 
   currentUser$: Observable<User | null> = this.authService.getCurrentUser();
   
-  // Compte uniquement les réservations 'pending' (En attente) pour la notification
+  // Compteurs pour les badges
   reservationCount$: Observable<number> = this.firestoreService.getReservations().pipe(
     map(reservations => reservations.filter(r => r.status === 'pending').length)
   );
-
-  // Compte tous les événements
+  
   eventCount$: Observable<number> = this.firestoreService.getEvents().pipe(
     map(events => events.length)
   );
 
   isSidebarOpen = false;
 
+  ngOnInit() {
+    // FERMETURE AUTOMATIQUE EN RESPONSIVE
+    // À chaque changement d'URL (fin de navigation), on ferme la sidebar
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.isSidebarOpen = false;
+    });
+  }
+
   toggleSidebar() {
     this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  // Méthode explicite pour fermer (utilisable depuis le HTML si besoin)
+  closeSidebar() {
+    this.isSidebarOpen = false;
   }
 
   async logout() {
@@ -1518,30 +1524,31 @@ export class FooterComponent implements OnInit {
   
   currentYear: number = new Date().getFullYear();
 
-  // Variable publique utilisée directement dans le HTML
+  // On met des données "en dur" pour que le footer s'affiche IMMÉDIATEMENT
   settings: AppSettings = {
     businessName: 'Kyranis Park',
-    address: 'Zone Touristique, Kerkennah',
+    address: 'Zone Touristique, Îles Kerkennah',
     phone: '+216 28 417 822',
     email: 'contact@kyranispark.tn',
-    facebookUrl: '',
-    homePageDescription: 'Bienvenue',
+    facebookUrl: 'https://facebook.com/kyranispark',
+    homePageDescription: 'Votre évasion au cœur des îles.',
     parkDescription: '',
     googleMapsEmbed: '',
     header: {
       logoText: 'KYRANIS PARK',
       menuHome: 'Accueil',
-      menuEvents: 'Événements',
-      menuReservations: 'Réservations',
+      menuEvents: 'Agenda',
+      menuReservations: 'Réserver',
       menuContact: 'Contact'
     }
   };
 
   ngOnInit() {
+    // On charge les vraies données de la base en arrière-plan
     this.firestoreService.getSettings().subscribe({
       next: (data) => {
         if (data) {
-          // Fusion pour garder les valeurs par défaut si certaines manquent
+          // On fusionne les données reçues avec celles par défaut
           this.settings = { ...this.settings, ...data };
         }
       },
@@ -1549,10 +1556,9 @@ export class FooterComponent implements OnInit {
     });
   }
 }
-
 ====================================
 FICHIER: ./src/app/components/gallery/gallery.component.ts
-Lignes:       86
+Lignes:       79
 ====================================
 
 import { Component, Input, OnChanges, SimpleChanges, HostListener } from '@angular/core';
@@ -1574,7 +1580,7 @@ export class GalleryComponent implements OnChanges {
   @Input() images: string[] = [];
   @Input() videos: string[] = [];
 
-  // Liste unifiée pour la navigation (prev/next entre images et vidéos)
+  // Liste combinée pour la navigation
   items: MediaItem[] = [];
   
   // État de la lightbox
@@ -1582,23 +1588,19 @@ export class GalleryComponent implements OnChanges {
   currentIndex = 0;
 
   ngOnChanges(changes: SimpleChanges): void {
-    // À chaque changement des inputs, on recrée la liste unifiée
+    // Reconstruire la liste si les inputs changent
     if (changes['images'] || changes['videos']) {
-      this.buildMediaList();
+      this.items = [
+        ...(this.images || []).map(url => ({ type: 'image' as const, url })),
+        ...(this.videos || []).map(url => ({ type: 'video' as const, url }))
+      ];
     }
-  }
-
-  private buildMediaList() {
-    this.items = [
-      ...(this.images || []).map(url => ({ type: 'image' as const, url })),
-      ...(this.videos || []).map(url => ({ type: 'video' as const, url }))
-    ];
   }
 
   openLightbox(index: number): void {
     this.currentIndex = index;
     this.isOpen = true;
-    document.body.style.overflow = 'hidden'; // Bloque le scroll arrière-plan
+    document.body.style.overflow = 'hidden'; // Bloque le scroll du site
   }
 
   closeLightbox(): void {
@@ -1607,6 +1609,7 @@ export class GalleryComponent implements OnChanges {
   }
 
   next(): void {
+    if (this.items.length === 0) return;
     if (this.currentIndex < this.items.length - 1) {
       this.currentIndex++;
     } else {
@@ -1615,6 +1618,7 @@ export class GalleryComponent implements OnChanges {
   }
 
   prev(): void {
+    if (this.items.length === 0) return;
     if (this.currentIndex > 0) {
       this.currentIndex--;
     } else {
@@ -1622,37 +1626,33 @@ export class GalleryComponent implements OnChanges {
     }
   }
 
-  // Fermeture avec la touche ESC
-  @HostListener('window:keydown.escape', [])
-  onKeydownHandler() {
-    if (this.isOpen) {
+  // --- GESTION CLAVIER ---
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (!this.isOpen) return;
+
+    if (event.key === 'Escape') {
       this.closeLightbox();
+    } else if (event.key === 'ArrowRight') {
+      this.next();
+    } else if (event.key === 'ArrowLeft') {
+      this.prev();
     }
-  }
-
-  // Navigation clavier flèches
-  @HostListener('window:keydown.arrowright', [])
-  onArrowRight() {
-    if (this.isOpen) this.next();
-  }
-
-  @HostListener('window:keydown.arrowleft', [])
-  onArrowLeft() {
-    if (this.isOpen) this.prev();
   }
 }
 
 ====================================
 FICHIER: ./src/app/components/header/header.component.ts
-Lignes:       70
+Lignes:       78
 ====================================
 
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router'; // Import NavigationEnd
 import { FirebaseService } from '../../services/firebase.service';
 import { FirestoreService } from '../../services/firestore.service';
 import { Observable } from 'rxjs';
+import { filter } from 'rxjs/operators'; // Import filter
 import { User } from '@angular/fire/auth';
 import { AppSettings } from '../../models';
 
@@ -1671,7 +1671,6 @@ export class HeaderComponent implements OnInit {
   user$: Observable<User | null> = this.firebaseService.user$;
   isMenuOpen = false;
 
-  // Données par défaut IMMÉDIATES (plus d'attente)
   settings: AppSettings = {
     businessName: 'Kyranis Park',
     address: '',
@@ -1691,7 +1690,7 @@ export class HeaderComponent implements OnInit {
   };
 
   ngOnInit() {
-    // Chargement non-bloquant
+    // 1. Chargement des paramètres
     this.firestoreService.getSettings().subscribe({
       next: (data) => {
         if (data) {
@@ -1699,6 +1698,14 @@ export class HeaderComponent implements OnInit {
         }
       },
       error: (err) => console.error('Erreur chargement header', err)
+    });
+
+    // 2. FERMETURE AUTOMATIQUE (Sécurité)
+    // Écoute chaque changement de page pour fermer le menu
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.isMenuOpen = false;
     });
   }
 
@@ -2151,18 +2158,19 @@ export class AdminLoginComponent {
 
 ====================================
 FICHIER: ./src/app/pages/contact/contact.component.ts
-Lignes:       73
+Lignes:       71
 ====================================
 
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router'; // <--- AJOUT
 import { Firestore, collection, addDoc, Timestamp } from '@angular/fire/firestore';
 
 @Component({
   selector: 'app-contact',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule], // <--- AJOUT
   templateUrl: './contact.component.html',
   styleUrls: ['./contact.component.scss']
 })
@@ -2178,8 +2186,8 @@ export class ContactComponent {
     this.contactForm = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      phone: [''], // Optionnel
-      subject: ['Question', Validators.required], // Valeur par défaut
+      phone: [''], 
+      subject: ['Question', Validators.required],
       message: ['', [Validators.required, Validators.minLength(10)]],
       acceptTerms: [false, Validators.requiredTrue]
     });
@@ -2195,8 +2203,6 @@ export class ContactComponent {
 
     try {
       const formData = this.contactForm.value;
-      
-      // Préparation de l'objet pour Firestore
       const contactData = {
         name: formData.name,
         email: formData.email,
@@ -2204,15 +2210,14 @@ export class ContactComponent {
         subject: formData.subject,
         message: formData.message,
         createdAt: Timestamp.now(),
-        status: 'new' // Pour gestion admin future
+        status: 'new'
       };
 
-      // Enregistrement dans la collection 'contacts'
       const contactsRef = collection(this.firestore, 'contacts');
       await addDoc(contactsRef, contactData);
 
       this.submitSuccess = true;
-      this.contactForm.reset({ subject: 'Question' }); // Reset gardant le sujet par défaut
+      this.contactForm.reset({ subject: 'Question' });
       
     } catch (error) {
       console.error('Erreur lors de l\'envoi du message', error);
@@ -2230,20 +2235,26 @@ export class ContactComponent {
 
 ====================================
 FICHIER: ./src/app/pages/evenements/evenements.component.ts
-Lignes:      103
+Lignes:      156
 ====================================
 
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { FirestoreService } from '../../services/firestore.service';
 import { Event } from '../../models';
 
 type FilterType = 'all' | 'upcoming' | 'past';
 
+interface LightboxItem {
+  type: 'image' | 'video';
+  url: string;
+}
+
 @Component({
   selector: 'app-evenements',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, RouterModule],
   templateUrl: './evenements.component.html',
   styleUrls: ['./evenements.component.scss']
 })
@@ -2258,7 +2269,11 @@ export class EvenementsComponent implements OnInit {
   isLoading = true;
   selectedEvent: Event | null = null;
   isModalOpen = false;
-  lightboxImage: string | null = null;
+
+  // --- GALERIE JS STATE ---
+  isLightboxOpen = false;
+  lightboxItems: LightboxItem[] = [];
+  lightboxIndex = 0;
 
   constructor() {}
 
@@ -2266,12 +2281,11 @@ export class EvenementsComponent implements OnInit {
     this.firestoreService.getEvents().subscribe({
       next: (events) => {
         this.allEvents = events;
-        // On applique le filtre par défaut
         this.applyFilter('all'); 
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erreur chargement événements', err);
+        console.error('Erreur', err);
         this.isLoading = false;
       }
     });
@@ -2279,9 +2293,6 @@ export class EvenementsComponent implements OnInit {
 
   applyFilter(filter: FilterType): void {
     this.currentFilter = filter;
-    
-    // FIX: On prend la date actuelle à Minuit (00:00:00)
-    // pour que les événements d'AUJOURD'HUI soient considérés comme "À venir"
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
@@ -2302,6 +2313,7 @@ export class EvenementsComponent implements OnInit {
     }
   }
 
+  // --- MODALE DÉTAILS ---
   openModal(event: Event): void {
     this.selectedEvent = event;
     this.isModalOpen = true;
@@ -2314,10 +2326,47 @@ export class EvenementsComponent implements OnInit {
     document.body.style.overflow = 'auto';
   }
 
-  getCoverImage(event: Event): string {
-    if (event.galleryImages && event.galleryImages.length > 0) {
-      return event.galleryImages[0];
+  // --- GALERIE PLEIN ÉCRAN (JS STYLE) ---
+  openGallery(index: number, images: string[] = [], videos: string[] = []) {
+    // 1. On construit une liste propre de tous les médias
+    this.lightboxItems = [
+      ...images.map(url => ({ type: 'image' as const, url })),
+      ...videos.map(url => ({ type: 'video' as const, url }))
+    ];
+    
+    // 2. On définit l'index de départ
+    this.lightboxIndex = index;
+    
+    // 3. On ouvre la galerie par dessus le popup
+    this.isLightboxOpen = true;
+  }
+
+  closeGallery() {
+    this.isLightboxOpen = false;
+    this.lightboxItems = [];
+  }
+
+  nextMedia(e?: any) {
+    if(e) e.stopPropagation();
+    if (this.lightboxIndex < this.lightboxItems.length - 1) {
+      this.lightboxIndex++;
+    } else {
+      this.lightboxIndex = 0; // Boucle
     }
+  }
+
+  prevMedia(e?: any) {
+    if(e) e.stopPropagation();
+    if (this.lightboxIndex > 0) {
+      this.lightboxIndex--;
+    } else {
+      this.lightboxIndex = this.lightboxItems.length - 1; // Boucle
+    }
+  }
+
+  // --- HELPERS ---
+  getCoverImage(event: Event): string {
+    if (event.galleryImages && event.galleryImages.length > 0) return event.galleryImages[0];
     return 'https://via.placeholder.com/800x600?text=Kyranis+Park';
   }
 
@@ -2328,30 +2377,45 @@ export class EvenementsComponent implements OnInit {
     return d < now;
   }
 
-  openLightbox(imgUrl: string): void {
-    this.lightboxImage = imgUrl;
-  }
+  // Navigation Clavier
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    // Si la galerie est ouverte, elle prend le focus
+    if (this.isLightboxOpen) {
+      if (event.key === 'Escape') this.closeGallery();
+      if (event.key === 'ArrowRight') this.nextMedia();
+      if (event.key === 'ArrowLeft') this.prevMedia();
+      return; 
+    }
 
-  closeLightbox(): void {
-    this.lightboxImage = null;
+    // Sinon c'est le popup détails
+    if (this.isModalOpen && event.key === 'Escape') {
+      this.closeModal();
+    }
   }
 }
 
 ====================================
 FICHIER: ./src/app/pages/home/home.component.ts
-Lignes:      175
+Lignes:      187
 ====================================
 
 import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { FirestoreService } from '../../services/firestore.service';
 import { AppSettings, Gallery, Event, Feedback } from '../../models';
 import { HeroSliderComponent } from '../../components/hero-slider/hero-slider.component';
+
+// Interface locale pour la navigation unifiée
+interface LightboxItem {
+  type: 'image' | 'video';
+  url: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -2384,7 +2448,7 @@ export class HomeComponent implements OnInit {
   // AVIS CLIENTS
   approvedFeedbacks$: Observable<Feedback[]> = this.firestoreService.getApprovedFeedbacks(3);
 
-  // LOGIQUE FEEDBACK & CAPTCHA
+  // FORMULAIRE AVIS
   isFeedbackModalOpen = false;
   feedbackForm: FormGroup;
   isSubmittingFeedback = false;
@@ -2394,10 +2458,10 @@ export class HomeComponent implements OnInit {
   
   stars: number[] = [1, 2, 3, 4, 5];
 
-  // LOGIQUE LIGHTBOX
-  lightboxOpen = false;
-  selectedGallery: Gallery | null = null;
-  currentImageIndex = 0;
+  // --- LOGIQUE LIGHTBOX PRO (Unifiée) ---
+  isLightboxOpen = false;       // État ouverture
+  lightboxItems: LightboxItem[] = []; // Liste de lecture
+  lightboxIndex = 0;            // Position actuelle
 
   constructor() {
     this.feedbackForm = this.fb.group({
@@ -2412,8 +2476,7 @@ export class HomeComponent implements OnInit {
     this.generateCaptcha();
   }
 
-  // --- FEEDBACK & CAPTCHA ---
-
+  // --- FEEDBACK ---
   generateCaptcha() {
     this.captchaA = Math.floor(Math.random() * 10) + 1;
     this.captchaB = Math.floor(Math.random() * 10) + 1;
@@ -2436,29 +2499,23 @@ export class HomeComponent implements OnInit {
   }
 
   async submitFeedback() {
-    // MODIFICATION ICI: Si invalide, on affiche les erreurs (rouge) au lieu de bloquer silencieusement
     if (this.feedbackForm.invalid) {
       this.feedbackForm.markAllAsTouched();
       return;
     }
-
     const userAnswer = parseInt(this.feedbackForm.get('captcha')?.value, 10);
     if (userAnswer !== this.captchaAnswer) {
-      alert(`Calcul incorrect (${this.captchaA} + ${this.captchaB}). Veuillez réessayer.`);
-      // On ne régénère pas forcément tout de suite pour laisser l'utilisateur corriger
+      alert(`Calcul incorrect.`);
       return;
     }
-
     this.isSubmittingFeedback = true;
     const { name, message, rating } = this.feedbackForm.value;
-
     try {
       await this.firestoreService.addFeedback({
         name,
         message,
         rating: parseInt(rating, 10),
       });
-      
       alert('Merci ! Votre avis a été envoyé et sera publié après validation.');
       this.closeFeedbackModal();
     } catch (e) {
@@ -2469,40 +2526,53 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  // Helper pour le HTML
   isFieldInvalid(field: string) {
     const control = this.feedbackForm.get(field);
     return control?.invalid && (control?.dirty || control?.touched);
   }
 
-  // --- LIGHTBOX ---
+  // --- GALERIE LIGHTBOX (LOGIQUE CORRIGÉE) ---
+
   openGallery(gallery: Gallery) {
-    if (!gallery.images || gallery.images.length === 0) return;
-    this.selectedGallery = gallery;
-    this.currentImageIndex = 0;
-    this.lightboxOpen = true;
+    // 1. On transforme TOUT (images + vidéos) en une liste 'lightboxItems'
+    this.lightboxItems = [
+      ...(gallery.images || []).map(url => ({ type: 'image' as const, url })),
+      ...(gallery.videos || []).map(url => ({ type: 'video' as const, url }))
+    ];
+
+    if (this.lightboxItems.length === 0) return;
+
+    // 2. On ouvre au début
+    this.lightboxIndex = 0;
+    this.isLightboxOpen = true;
     document.body.style.overflow = 'hidden';
   }
 
   closeLightbox() {
-    this.lightboxOpen = false;
-    this.selectedGallery = null;
-    this.currentImageIndex = 0;
+    this.isLightboxOpen = false;
+    this.lightboxItems = [];
     document.body.style.overflow = 'auto';
   }
 
-  nextImage(e?: any) {
-    e?.stopPropagation();
-    if (!this.selectedGallery || !this.selectedGallery.images) return;
-    this.currentImageIndex = (this.currentImageIndex < this.selectedGallery.images.length - 1) ? this.currentImageIndex + 1 : 0;
+  nextMedia(e?: any) {
+    if(e) e.stopPropagation();
+    if (this.lightboxIndex < this.lightboxItems.length - 1) {
+      this.lightboxIndex++;
+    } else {
+      this.lightboxIndex = 0; // Boucle
+    }
   }
 
-  prevImage(e?: any) {
-    e?.stopPropagation();
-    if (!this.selectedGallery || !this.selectedGallery.images) return;
-    this.currentImageIndex = (this.currentImageIndex > 0) ? this.currentImageIndex - 1 : this.selectedGallery.images.length - 1;
+  prevMedia(e?: any) {
+    if(e) e.stopPropagation();
+    if (this.lightboxIndex > 0) {
+      this.lightboxIndex--;
+    } else {
+      this.lightboxIndex = this.lightboxItems.length - 1; // Boucle
+    }
   }
 
+  // --- HELPERS ---
   getCoverImage(event: Event): string {
     if (event.galleryImages && event.galleryImages.length > 0) return event.galleryImages[0];
     return 'https://via.placeholder.com/800x600?text=Kyranis+Park';
@@ -2510,10 +2580,10 @@ export class HomeComponent implements OnInit {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if (this.lightboxOpen) {
+    if (this.isLightboxOpen) {
       if (event.key === 'Escape') this.closeLightbox();
-      else if (event.key === 'ArrowRight') this.nextImage();
-      else if (event.key === 'ArrowLeft') this.prevImage();
+      else if (event.key === 'ArrowRight') this.nextMedia();
+      else if (event.key === 'ArrowLeft') this.prevMedia();
     }
   }
 }
@@ -2546,20 +2616,20 @@ export class PageNotFoundComponent {}
 
 ====================================
 FICHIER: ./src/app/pages/reservations/reservations.component.ts
-Lignes:      191
+Lignes:      167
 ====================================
 
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router'; // Ajout RouterModule
 import { FirestoreService } from '../../services/firestore.service';
 import { Reservation } from '../../models';
 
 @Component({
   selector: 'app-reservations',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule], // Ajout dans les imports
   templateUrl: './reservations.component.html',
   styleUrls: ['./reservations.component.scss']
 })
@@ -2575,19 +2645,18 @@ export class ReservationsComponent implements OnInit {
   submitSuccess = false;
   estimatedPrice = 0;
   minDate: string = '';
-
+  
   // Formulaires
   boatForm!: FormGroup;
   parkForm!: FormGroup;
 
   // Données de tarification (Mock)
   boatPrices: any = {
-    'flouka': 150,    // Prix de base
+    'flouka': 150,
     'speed_boat': 400,
     'catamaran': 800,
     'yacht': 2500
   };
-
   eventPrices: any = {
     'birthday': 500,
     'marriage': 2000,
@@ -2596,14 +2665,12 @@ export class ReservationsComponent implements OnInit {
   };
 
   constructor() {
-    // Calcul de la date minimum (Aujourd'hui)
     const today = new Date();
     this.minDate = today.toISOString().split('T')[0];
   }
 
   ngOnInit(): void {
     this.initForms();
-    // Vérifier les query params pour pré-sélectionner l'onglet
     this.route.queryParams.subscribe(params => {
       if (params['type'] === 'park') {
         this.activeTab = 'park';
@@ -2613,7 +2680,6 @@ export class ReservationsComponent implements OnInit {
       this.calculatePrice();
     });
 
-    // Écouteurs pour le calcul dynamique du prix
     this.boatForm.valueChanges.subscribe(() => this.calculatePrice());
     this.parkForm.valueChanges.subscribe(() => this.calculatePrice());
   }
@@ -2623,7 +2689,6 @@ export class ReservationsComponent implements OnInit {
     this.boatForm = this.fb.group({
       fullName: ['', [Validators.required, Validators.minLength(3)]],
       email: ['', [Validators.required, Validators.email]],
-      // Regex pour +216 suivi de 8 chiffres
       phone: ['', [Validators.required, Validators.pattern(/^\+216[0-9]{8}$/)]], 
       date: ['', [Validators.required]],
       time: ['', [Validators.required]],
@@ -2640,7 +2705,7 @@ export class ReservationsComponent implements OnInit {
       phone: ['', [Validators.required, Validators.pattern(/^\+216[0-9]{8}$/)]],
       date: ['', [Validators.required]],
       eventType: ['birthday', Validators.required],
-      duration: ['half_day', Validators.required], // half_day, full_day
+      duration: ['half_day', Validators.required],
       menuIncluded: [false],
       numberOfPeople: [20, [Validators.required, Validators.min(10), Validators.max(200)]],
       specialRequests: [''],
@@ -2658,7 +2723,6 @@ export class ReservationsComponent implements OnInit {
     if (this.activeTab === 'boat') {
       const type = this.boatForm.get('boatType')?.value;
       const basePrice = this.boatPrices[type] || 0;
-      // Exemple simple: Prix fixe par bateau (pourrait être par personne)
       this.estimatedPrice = basePrice;
     } else {
       const type = this.parkForm.get('eventType')?.value;
@@ -2667,13 +2731,8 @@ export class ReservationsComponent implements OnInit {
       const pax = this.parkForm.get('numberOfPeople')?.value || 0;
 
       let price = this.eventPrices[type] || 0;
-      
-      // Facteur durée
       if (duration === 'full_day') price *= 1.5;
-      
-      // Facteur menu (ex: 50 TND par personne)
       if (menu) price += (pax * 50);
-
       this.estimatedPrice = price;
     }
   }
@@ -2681,18 +2740,14 @@ export class ReservationsComponent implements OnInit {
   async onSubmit() {
     this.isSubmitting = true;
     const currentForm = this.activeTab === 'boat' ? this.boatForm : this.parkForm;
-
+    
     if (currentForm.invalid) {
       this.isSubmitting = false;
       currentForm.markAllAsTouched();
-      // Affiche toutes les erreurs
       return;
     }
 
     const formValues = currentForm.value;
-
-    // Construction de l'objet Reservation
-    // FIX: Utilisation de null au lieu de undefined pour Firestore
     const reservationData: Reservation = {
       type: this.activeTab,
       fullName: formValues.fullName,
@@ -2717,15 +2772,7 @@ export class ReservationsComponent implements OnInit {
       this.isSubmitting = false;
       this.submitSuccess = true;
       currentForm.reset();
-      
-      // Scroll to top
       window.scrollTo(0, 0);
-
-      // Redirection après 3 secondes (optionnel)
-      setTimeout(() => {
-        // this.router.navigate(['/']); 
-      }, 3000);
-
     } catch (error) {
       console.error('Erreur réservation', error);
       this.isSubmitting = false;
@@ -2733,7 +2780,6 @@ export class ReservationsComponent implements OnInit {
     }
   }
 
-  // Helper pour vérifier les champs dans le HTML
   isFieldInvalid(fieldName: string): boolean {
     const form = this.activeTab === 'boat' ? this.boatForm : this.parkForm;
     const field = form.get(fieldName);
@@ -4628,10 +4674,10 @@ Lignes:      116
 
 ====================================
 FICHIER: ./src/app/components/footer/footer.component.html
-Lignes:       51
+Lignes:       64
 ====================================
 
-<div class="bg-gray-900 text-white w-full border-t border-gray-800">
+<footer class="bg-gray-900 text-white w-full border-t border-gray-800 mt-auto relative z-50">
   
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
@@ -4639,57 +4685,69 @@ Lignes:       51
       <div class="space-y-4">
         <div class="flex items-center space-x-2">
            <span class="text-2xl font-bold tracking-wider text-blue-500">
-             {{ (settings?.businessName || 'KYRANIS PARK') | uppercase }}
+             {{ (settings.businessName || 'KYRANIS PARK') | uppercase }}
            </span>
         </div>
         <p class="text-gray-400 text-sm leading-relaxed">
-          {{ settings?.homePageDescription || 'Votre évasion au cœur des îles.' }}
+          {{ settings.homePageDescription | slice:0:150 }}...
         </p>
+        
+        <div class="flex space-x-4 pt-2" *ngIf="settings.facebookUrl">
+          <a [href]="settings.facebookUrl" target="_blank" class="text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-2 group">
+            <span class="text-sm font-medium border border-gray-600 px-3 py-1 rounded-full group-hover:border-blue-500">Suivez-nous sur Facebook</span>
+          </a>
+        </div>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Menu</h3>
+        <h3 class="text-lg font-semibold mb-6 text-white uppercase tracking-wider border-b-2 border-blue-600 pb-2 inline-block">Menu</h3>
         <ul class="space-y-3 text-sm">
-          <li><a routerLink="/" class="text-gray-400 hover:text-blue-400 no-underline">Accueil</a></li>
-          <li><a routerLink="/evenements" class="text-gray-400 hover:text-blue-400 no-underline">Agenda</a></li>
-          <li><a routerLink="/reservations" class="text-gray-400 hover:text-blue-400 no-underline">Réserver</a></li>
-          <li><a routerLink="/contact" class="text-gray-400 hover:text-blue-400 no-underline">Contact</a></li>
+          <li><a routerLink="/" class="text-gray-400 hover:text-white transition-colors no-underline">Accueil</a></li>
+          <li><a routerLink="/evenements" class="text-gray-400 hover:text-white transition-colors no-underline">Nos Événements</a></li>
+          <li><a routerLink="/reservations" class="text-gray-400 hover:text-white transition-colors no-underline">Réserver</a></li>
+          <li><a routerLink="/contact" class="text-gray-400 hover:text-white transition-colors no-underline">Nous Contacter</a></li>
         </ul>
       </div>
 
       <div>
-        <h3 class="text-lg font-semibold mb-4 text-white uppercase tracking-wider border-b border-gray-700 pb-2 inline-block">Infos</h3>
-        <ul class="space-y-4 text-sm">
+        <h3 class="text-lg font-semibold mb-6 text-white uppercase tracking-wider border-b-2 border-blue-600 pb-2 inline-block">Infos Contact</h3>
+        <ul class="space-y-5 text-sm">
+          
           <li class="flex items-start">
-            <span class="text-blue-500 mr-3">📍</span>
-            <span class="text-gray-300">{{ settings?.address || 'Zone Touristique' }}</span>
+            <span class="text-blue-500 mr-3 text-xl">📍</span>
+            <span class="text-gray-300">{{ settings.address || 'Zone Touristique' }}</span>
           </li>
+
           <li class="flex items-center">
-            <span class="text-blue-500 mr-3">📞</span>
-            <a href="tel:{{ settings?.phone }}" class="text-white font-medium hover:text-blue-400 no-underline">{{ settings?.phone || '--' }}</a>
+            <span class="text-blue-500 mr-3 text-xl">📞</span>
+            <a href="tel:{{ settings.phone }}" class="text-white font-medium hover:text-blue-400 transition-colors no-underline text-lg">
+              {{ settings.phone || '--' }}
+            </a>
           </li>
+
           <li class="flex items-center">
-            <span class="text-blue-500 mr-3">✉️</span>
-            <a href="mailto:{{ settings?.email }}" class="text-gray-300 hover:text-white no-underline">{{ settings?.email || '--' }}</a>
+            <span class="text-blue-500 mr-3 text-xl">✉️</span>
+            <a href="mailto:{{ settings.email }}" class="text-gray-300 hover:text-white transition-colors break-all no-underline">
+              {{ settings.email || '--' }}
+            </a>
           </li>
+
         </ul>
       </div>
     </div>
     
-    <div class="mt-12 pt-8 border-t border-gray-800 text-center text-xs text-gray-500">
-      <p>© {{ currentYear }} {{ settings?.businessName }}. Tous droits réservés.</p>
-      <a routerLink="/admin-login" class="mt-2 inline-block hover:text-white">Admin</a>
+    <div class="mt-12 pt-8 border-t border-gray-800 text-center flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
+      <p>© {{ currentYear }} {{ settings.businessName || 'Kyranis Park' }}. Tous droits réservés.</p>
+      <a routerLink="/admin-login" class="mt-2 md:mt-0 opacity-50 hover:opacity-100 transition-opacity underline">Espace Admin</a>
     </div>
   </div>
-</div>
-
+</footer>
 ====================================
 FICHIER: ./src/app/components/gallery/gallery.component.html
-Lignes:       78
+Lignes:       74
 ====================================
 
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-  
   <div *ngFor="let item of items; let i = index" 
        class="group relative aspect-square overflow-hidden rounded-xl bg-gray-100 cursor-pointer shadow-sm hover:shadow-lg transition-all"
        (click)="openLightbox(i)">
@@ -4707,15 +4765,10 @@ Lignes:       78
     </video>
 
     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-      
-      <svg *ngIf="item.type === 'image'" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-      </svg>
-
-      <div *ngIf="item.type === 'video'" class="bg-white/30 backdrop-blur-sm rounded-full p-2 group-hover:bg-white/50 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <div class="bg-white/20 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path *ngIf="item.type === 'image'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+          <path *ngIf="item.type === 'video'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
         </svg>
       </div>
     </div>
@@ -4726,42 +4779,44 @@ Lignes:       78
      class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300"
      (click)="closeLightbox()">
   
-  <button class="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-[110]" 
+  <button class="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-[110] bg-black/20 hover:bg-black/50 rounded-full transition-colors" 
           (click)="closeLightbox()">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
     </svg>
   </button>
 
-  <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block" 
+  <button *ngIf="items.length > 1"
+          class="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 text-white p-3 z-[110] bg-black/30 hover:bg-white/20 rounded-full transition-all backdrop-blur-sm border border-white/10" 
           (click)="$event.stopPropagation(); prev()">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
     </svg>
   </button>
 
-  <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block" 
+  <button *ngIf="items.length > 1"
+          class="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 text-white p-3 z-[110] bg-black/30 hover:bg-white/20 rounded-full transition-all backdrop-blur-sm border border-white/10" 
           (click)="$event.stopPropagation(); next()">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
     </svg>
   </button>
 
-  <div class="relative max-w-7xl w-full max-h-screen p-4 flex items-center justify-center" 
+  <div class="relative w-full h-full flex flex-col items-center justify-center p-4" 
        (click)="$event.stopPropagation()">
     
     <img *ngIf="items[currentIndex].type === 'image'" 
          [src]="items[currentIndex].url" 
-         class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl animate-fade-in">
+         class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl animate-fade-in select-none">
     
     <video *ngIf="items[currentIndex].type === 'video'" 
            [src]="items[currentIndex].url" 
            controls 
            autoplay
-           class="max-w-full max-h-[85vh] w-auto rounded shadow-2xl outline-none border-none">
+           class="max-w-full max-h-[85vh] w-auto rounded shadow-2xl outline-none">
     </video>
 
-    <div class="absolute bottom-[-40px] left-1/2 -translate-x-1/2 text-white/50 text-sm">
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 text-sm bg-black/40 px-4 py-1 rounded-full backdrop-blur-md border border-white/10">
       {{ currentIndex + 1 }} / {{ items.length }}
     </div>
   </div>
@@ -4769,14 +4824,14 @@ Lignes:       78
 
 ====================================
 FICHIER: ./src/app/components/header/header.component.html
-Lignes:       86
+Lignes:       97
 ====================================
 
 <header class="bg-white shadow-md fixed w-full z-50 top-0 left-0 transition-all duration-300 h-12">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-12">
       
-      <div class="flex-shrink-0 flex items-center cursor-pointer" routerLink="/">
+      <div class="flex-shrink-0 flex items-center cursor-pointer" routerLink="/" (click)="closeMenu()">
         <img *ngIf="settings.header?.logoUrl" 
              [src]="settings.header?.logoUrl" 
              alt="Logo" 
@@ -4788,24 +4843,19 @@ Lignes:       86
       </div>
 
       <nav class="hidden md:flex space-x-6 items-center">
-        <a routerLink="/" 
-           routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600" 
-           [routerLinkActiveOptions]="{exact: true}"
+        <a routerLink="/" routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600" [routerLinkActiveOptions]="{exact: true}"
            class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
            {{ settings.header?.menuHome || 'Accueil' }}
         </a>
-        <a routerLink="/evenements" 
-           routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
+        <a routerLink="/evenements" routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
            class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
            {{ settings.header?.menuEvents || 'Événements' }}
         </a>
-        <a routerLink="/reservations" 
-           routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
+        <a routerLink="/reservations" routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
            class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
            {{ settings.header?.menuReservations || 'Réservations' }}
         </a>
-        <a routerLink="/contact" 
-           routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
+        <a routerLink="/contact" routerLinkActive="text-blue-600 font-semibold border-b-2 border-blue-600"
            class="text-gray-600 hover:text-blue-500 px-1 py-1 text-sm font-medium transition-colors">
             {{ settings.header?.menuContact || 'Contact' }}
         </a>
@@ -4841,10 +4891,26 @@ Lignes:       86
 
   <div class="md:hidden bg-white border-t border-gray-100 shadow-lg absolute w-full left-0 top-12" *ngIf="isMenuOpen">
     <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col">
-      <a routerLink="/" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" [routerLinkActiveOptions]="{exact: true}" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuHome || 'Accueil' }}</a>
-      <a routerLink="/evenements" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuEvents || 'Événements' }}</a>
-      <a routerLink="/reservations" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuReservations || 'Réservations' }}</a>
-      <a routerLink="/contact" (click)="closeMenu()" routerLinkActive="bg-blue-50 text-blue-600" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">{{ settings.header?.menuContact || 'Contact' }}</a>
+      <a routerLink="/" (click)="closeMenu()" 
+         routerLinkActive="bg-blue-50 text-blue-600" [routerLinkActiveOptions]="{exact: true}" 
+         class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+         {{ settings.header?.menuHome || 'Accueil' }}
+      </a>
+      <a routerLink="/evenements" (click)="closeMenu()" 
+         routerLinkActive="bg-blue-50 text-blue-600" 
+         class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+         {{ settings.header?.menuEvents || 'Événements' }}
+      </a>
+      <a routerLink="/reservations" (click)="closeMenu()" 
+         routerLinkActive="bg-blue-50 text-blue-600" 
+         class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+         {{ settings.header?.menuReservations || 'Réservations' }}
+      </a>
+      <a routerLink="/contact" (click)="closeMenu()" 
+         routerLinkActive="bg-blue-50 text-blue-600" 
+         class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">
+         {{ settings.header?.menuContact || 'Contact' }}
+      </a>
       
       <div class="border-t border-gray-200 mt-2 pt-2">
          <ng-container *ngIf="user$ | async as user; else mobileLogin">
@@ -4864,7 +4930,7 @@ FICHIER: ./src/app/components/hero-slider/hero-slider.component.html
 Lignes:       49
 ====================================
 
-<div class="relative w-full min-h-screen overflow-hidden bg-gray-900 group">
+<div class="relative w-full h-[500px] md:h-[70vh] min-h-[500px] overflow-hidden bg-gray-900 group">
   
   <div class="absolute inset-0 w-full h-full" [@slideAnimation]="currentIndex">
     
@@ -4882,11 +4948,11 @@ Lignes:       49
 
         <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
           
-          <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-wide animate-fade-in-up uppercase text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
+          <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-wide animate-fade-in-up uppercase text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
             {{ slide.title }}
           </h1>
           
-          <p class="text-xl md:text-2xl font-light tracking-widest animate-fade-in-up delay-200 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">
+          <p class="text-lg md:text-xl font-light tracking-widest animate-fade-in-up delay-200 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] max-w-2xl">
             {{ slide.subtitle }}
           </p>
           
@@ -4902,15 +4968,15 @@ Lignes:       49
   </div>
 
   <button (click)="prevSlide()" class="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/30 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-all cursor-pointer">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
   </button>
 
   <button (click)="nextSlide()" class="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/30 text-white hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-all cursor-pointer">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
   </button>
 
-  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-3">
-    <button *ngFor="let slide of slides; let i = index" (click)="goToSlide(i)" class="w-3 h-3 rounded-full transition-all duration-300 shadow-sm border border-black/20 cursor-pointer" [ngClass]="i === currentIndex ? 'bg-white scale-125 w-8' : 'bg-white/50 hover:bg-white/80'"></button>
+  <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex space-x-3">
+    <button *ngFor="let slide of slides; let i = index" (click)="goToSlide(i)" class="w-2 h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 shadow-sm border border-black/20 cursor-pointer" [ngClass]="i === currentIndex ? 'bg-white scale-125 w-6 md:w-8' : 'bg-white/50 hover:bg-white/80'"></button>
   </div>
 </div>
 
@@ -5000,13 +5066,20 @@ Lignes:       64
 
 ====================================
 FICHIER: ./src/app/pages/contact/contact.component.html
-Lignes:      172
+Lignes:      178
 ====================================
 
 <div class="min-h-screen bg-gray-50 pt-20 pb-12 relative">
   
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     
+    <a routerLink="/" class="inline-flex items-center text-gray-500 hover:text-blue-600 mb-6 transition-colors group cursor-pointer no-underline select-none">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Retour à l'accueil
+    </a>
+
     <div class="text-center mb-12">
       <h1 class="text-4xl font-extrabold text-gray-900">Contactez-nous</h1>
       <p class="mt-4 text-xl text-gray-600">Une question ? Une réservation ? Nous sommes à votre écoute.</p>
@@ -5040,7 +5113,7 @@ Lignes:      172
               <div class="flex-shrink-0">
                 <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600">
                   <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
               </div>
@@ -5168,7 +5241,6 @@ Lignes:      172
     <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
     </svg>
-    
     <span class="absolute right-20 bg-gray-900 text-white text-xs font-bold py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
       Suivez-nous !
     </span>
@@ -5178,181 +5250,153 @@ Lignes:      172
 
 ====================================
 FICHIER: ./src/app/pages/evenements/evenements.component.html
-Lignes:      163
+Lignes:      135
 ====================================
 
 <div class="min-h-screen bg-gray-50 pb-20">
   
-  <div class="bg-blue-900 text-white py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h1 class="text-4xl md:text-5xl font-bold mb-4">Nos Événements</h1>
-      <p class="text-blue-100 text-lg max-w-2xl mx-auto">
-        Découvrez les moments magiques passés et les aventures à venir à Kyranis Park.
-      </p>
+  <div class="bg-blue-900 text-white py-12 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <a routerLink="/" class="inline-flex items-center text-blue-300 hover:text-white mb-6 transition-colors group cursor-pointer no-underline select-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Retour à l'accueil
+      </a>
+      <div class="text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 text-white">Nos Événements</h1>
+        <p class="text-blue-100 text-lg max-w-2xl mx-auto">Découvrez les moments magiques passés et les aventures à venir à Kyranis Park.</p>
+      </div>
     </div>
   </div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
     <div class="bg-white rounded-lg shadow-sm p-4 flex flex-wrap justify-center gap-4 border border-gray-100">
-      <button (click)="applyFilter('all')" 
-              [class]="currentFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-              class="px-6 py-2 rounded-full font-medium transition-colors duration-200">
-        Tous
-      </button>
-      <button (click)="applyFilter('upcoming')" 
-              [class]="currentFilter === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-              class="px-6 py-2 rounded-full font-medium transition-colors duration-200">
-        À Venir
-      </button>
-      <button (click)="applyFilter('past')" 
-              [class]="currentFilter === 'past' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-              class="px-6 py-2 rounded-full font-medium transition-colors duration-200">
-        Passés
-      </button>
+      <button (click)="applyFilter('all')" [class]="currentFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="px-6 py-2 rounded-full font-medium transition-colors duration-200">Tous</button>
+      <button (click)="applyFilter('upcoming')" [class]="currentFilter === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="px-6 py-2 rounded-full font-medium transition-colors duration-200">À Venir</button>
+      <button (click)="applyFilter('past')" [class]="currentFilter === 'past' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'" class="px-6 py-2 rounded-full font-medium transition-colors duration-200">Passés</button>
     </div>
   </div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-    
-    <div *ngIf="isLoading" class="flex justify-center py-20">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-
-    <div *ngIf="!isLoading && filteredEvents.length === 0" class="text-center py-20">
-      <p class="text-gray-500 text-lg">Aucun événement trouvé pour ce filtre.</p>
-    </div>
+    <div *ngIf="isLoading" class="flex justify-center py-20"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+    <div *ngIf="!isLoading && filteredEvents.length === 0" class="text-center py-20"><p class="text-gray-500 text-lg">Aucun événement trouvé.</p></div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div *ngFor="let event of filteredEvents" 
-           class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group flex flex-col h-full">
-        
+      <div *ngFor="let event of filteredEvents" class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group flex flex-col h-full">
         <div class="relative h-56 overflow-hidden cursor-pointer" (click)="openModal(event)">
-          <img [src]="getCoverImage(event)" 
-               [alt]="event.title" 
-               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-          
+          <img [src]="getCoverImage(event)" [alt]="event.title" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
           <div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-lg shadow text-center min-w-[60px]">
             <div class="text-sm font-bold text-gray-800">{{ event.date | date:'dd' }}</div>
             <div class="text-xs uppercase text-gray-500">{{ event.date | date:'MMM' }}</div>
           </div>
-
-          <div [ngClass]="isEventPast(event) ? 'bg-gray-500' : 'bg-green-500'"
-               class="absolute top-4 left-4 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
-            {{ isEventPast(event) ? 'Passé' : 'À Venir' }}
-          </div>
+          <div [ngClass]="isEventPast(event) ? 'bg-gray-500' : 'bg-green-500'" class="absolute top-4 left-4 text-white text-xs font-bold px-3 py-1 rounded-full shadow">{{ isEventPast(event) ? 'Passé' : 'À Venir' }}</div>
         </div>
-
         <div class="p-6 flex flex-col flex-grow">
           <div class="flex items-center text-sm text-gray-500 mb-2">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            {{ event.location }}
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> {{ event.location }}
           </div>
-          
-          <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors cursor-pointer" (click)="openModal(event)">
-            {{ event.title }}
-          </h3>
-          
-          <p class="text-gray-600 text-sm line-clamp-3 mb-4 flex-grow">
-            {{ event.description }}
-          </p>
-
-          <button (click)="openModal(event)" 
-                  class="w-full mt-auto bg-gray-50 hover:bg-blue-50 text-blue-600 font-semibold py-2 px-4 rounded-lg border border-blue-100 transition-colors">
-            Voir Détails
-          </button>
+          <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors cursor-pointer" (click)="openModal(event)">{{ event.title }}</h3>
+          <p class="text-gray-600 text-sm line-clamp-3 mb-4 flex-grow">{{ event.description }}</p>
+          <button (click)="openModal(event)" class="w-full mt-auto bg-gray-50 hover:bg-blue-50 text-blue-600 font-semibold py-2 px-4 rounded-lg border border-blue-100 transition-colors">Voir Détails</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<div *ngIf="isModalOpen && selectedEvent" 
-     class="fixed inset-0 z-50 overflow-y-auto" 
-     aria-labelledby="modal-title" role="dialog" aria-modal="true">
-  
+<div *ngIf="isModalOpen && selectedEvent" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
   <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" (click)="closeModal()"></div>
 
   <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
     <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-4xl w-full">
       
       <button (click)="closeModal()" class="absolute top-4 right-4 z-10 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white transition-colors">
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
 
       <div class="h-64 sm:h-80 w-full relative">
         <img [src]="getCoverImage(selectedEvent)" class="w-full h-full object-cover">
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
         <div class="absolute bottom-6 left-6 text-white">
-           <span [ngClass]="isEventPast(selectedEvent) ? 'bg-gray-500' : 'bg-green-500'" 
-                 class="text-xs font-bold px-2 py-1 rounded mb-2 inline-block">
-             {{ isEventPast(selectedEvent) ? 'PASSÉ' : 'À VENIR' }}
-           </span>
+           <span [ngClass]="isEventPast(selectedEvent) ? 'bg-gray-500' : 'bg-green-500'" class="text-xs font-bold px-2 py-1 rounded mb-2 inline-block">{{ isEventPast(selectedEvent) ? 'PASSÉ' : 'À VENIR' }}</span>
            <h2 class="text-3xl font-bold">{{ selectedEvent.title }}</h2>
            <div class="flex items-center mt-2 text-gray-200">
-             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-             {{ selectedEvent.date | date:'fullDate' }}
+             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> {{ selectedEvent.date | date:'fullDate' }}
              <span class="mx-3">•</span>
-             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-             {{ selectedEvent.location }}
+             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg> {{ selectedEvent.location }}
            </div>
         </div>
       </div>
 
       <div class="p-6 sm:p-8">
-        <div class="prose max-w-none text-gray-700 mb-8 whitespace-pre-wrap">
-          {{ selectedEvent.description }}
-        </div>
-
+        <div class="prose max-w-none text-gray-700 mb-8 whitespace-pre-wrap">{{ selectedEvent.description }}</div>
+        
         <div class="border-t border-gray-100 my-8"></div>
-
-        <h3 class="text-xl font-bold text-gray-900 mb-4" 
-            *ngIf="(selectedEvent.galleryImages?.length || 0) + (selectedEvent.galleryVideos?.length || 0) > 0">
-          Galerie Média
-        </h3>
+        <h3 class="text-xl font-bold text-gray-900 mb-4" *ngIf="(selectedEvent.galleryImages?.length || 0) + (selectedEvent.galleryVideos?.length || 0) > 0">Galerie Média</h3>
 
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div *ngFor="let img of selectedEvent.galleryImages" 
+          <div *ngFor="let img of selectedEvent.galleryImages; let i = index" 
                class="relative aspect-square cursor-pointer group rounded-lg overflow-hidden"
-               (click)="openLightbox(img)">
+               (click)="openGallery(i, selectedEvent.galleryImages, selectedEvent.galleryVideos)">
             <img [src]="img" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-               <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-               </svg>
+               <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
             </div>
           </div>
           
-          <div *ngFor="let vid of selectedEvent.galleryVideos" class="col-span-2 aspect-video bg-black rounded-lg overflow-hidden">
-             <video controls class="w-full h-full" [src]="vid"></video>
+          <div *ngFor="let vid of selectedEvent.galleryVideos; let j = index" 
+               class="col-span-2 aspect-video bg-black rounded-lg overflow-hidden cursor-pointer group relative"
+               (click)="openGallery((selectedEvent.galleryImages?.length || 0) + j, selectedEvent.galleryImages, selectedEvent.galleryVideos)">
+             <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100" [src]="vid"></video>
+             <div class="absolute inset-0 flex items-center justify-center"><svg class="w-12 h-12 text-white opacity-80 group-hover:opacity-100" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg></div>
           </div>
         </div>
       </div>
 
       <div class="bg-gray-50 px-6 py-4 flex justify-end">
-        <button (click)="closeModal()" class="text-gray-600 hover:text-gray-900 font-semibold px-4 py-2">
-          Fermer
-        </button>
+        <button (click)="closeModal()" class="text-gray-600 hover:text-gray-900 font-semibold px-4 py-2">Fermer</button>
       </div>
     </div>
   </div>
 </div>
 
-<div *ngIf="lightboxImage" 
-     class="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4"
-     (click)="closeLightbox()">
-  <img [src]="lightboxImage" class="max-w-full max-h-[90vh] object-contain rounded shadow-2xl">
+<div *ngIf="isLightboxOpen" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 transition-opacity duration-300" (click)="closeGallery()">
+  
+  <button class="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-[110]" (click)="closeGallery()">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+  </button>
+
+  <button *ngIf="lightboxItems.length > 1" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] bg-black/30 hover:bg-black/60 rounded-full transition-all" (click)="prevMedia($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+  </button>
+
+  <button *ngIf="lightboxItems.length > 1" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] bg-black/30 hover:bg-black/60 rounded-full transition-all" (click)="nextMedia($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+  </button>
+
+  <div class="relative max-w-7xl w-full h-full flex flex-col items-center justify-center" (click)="$event.stopPropagation()">
+    <img *ngIf="lightboxItems[lightboxIndex].type === 'image'" 
+         [src]="lightboxItems[lightboxIndex].url" 
+         class="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl animate-fade-in select-none">
+    
+    <video *ngIf="lightboxItems[lightboxIndex].type === 'video'" 
+           [src]="lightboxItems[lightboxIndex].url" 
+           controls autoplay
+           class="max-w-full max-h-[85vh] w-auto rounded-md shadow-2xl">
+    </video>
+
+    <div class="absolute bottom-4 left-0 right-0 text-center text-white/80 pointer-events-none font-mono text-sm">
+      {{ lightboxIndex + 1 }} / {{ lightboxItems.length }}
+    </div>
+  </div>
 </div>
 
 ====================================
 FICHIER: ./src/app/pages/home/home.component.html
-Lignes:      214
+Lignes:      219
 ====================================
 
 <app-hero-slider></app-hero-slider>
 
-<section class="py-16 md:py-24 bg-white overflow-hidden">
+<section class="py-16 md:py-24 bg-gradient-to-b from-blue-50 to-white overflow-hidden">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <ng-container *ngIf="settings$ | async as settings; else loadingSettings">
       <div class="max-w-4xl mx-auto text-center">
@@ -5369,7 +5413,7 @@ Lignes:      214
             <a routerLink="/reservations" [queryParams]="{type: 'park'}" class="px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg shadow-md hover:bg-purple-700 transition-colors text-center flex items-center justify-center">
                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> Réserver l'Espace Privé
             </a>
-            <a routerLink="/contact" class="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors text-center">Nous Contacter</a>
+            <a routerLink="/contact" class="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-gray-400 hover:bg-white transition-colors text-center">Nous Contacter</a>
             <button (click)="openFeedbackModal()" class="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600 transition-colors text-center flex items-center justify-center">
                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg> Donner votre avis
             </button>
@@ -5385,12 +5429,11 @@ Lignes:      214
 
 <section class="py-16 bg-blue-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-col md:flex-row justify-between items-end mb-12">
-      <div class="text-center md:text-left">
-        <h2 class="text-3xl font-bold text-gray-900">Événements</h2>
-        <p class="mt-4 text-gray-600">Nos prochains événements à ne pas manquer</p>
-      </div>
-      <a routerLink="/evenements" class="hidden md:inline-flex items-center text-blue-600 font-semibold hover:text-blue-800 transition-colors mt-4 md:mt-0">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-gray-900">Événements</h2>
+      <p class="mt-4 text-gray-600">Nos prochains événements à ne pas manquer</p>
+      
+      <a routerLink="/evenements" class="hidden md:inline-flex items-center text-blue-600 font-semibold hover:text-blue-800 transition-colors mt-4">
         Voir tout l'agenda <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
       </a>
     </div>
@@ -5493,15 +5536,10 @@ Lignes:      214
         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
           <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Laissez votre avis</h3>
           <div class="space-y-4">
-            
             <div>
               <label class="block text-sm font-medium text-gray-700">Votre Nom</label>
-              <input type="text" formControlName="name" 
-                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
-                     [class.border-red-500]="isFieldInvalid('name')">
-              <p *ngIf="isFieldInvalid('name')" class="text-red-500 text-xs mt-1">Le nom est requis (min 3 car.)</p>
+              <input type="text" formControlName="name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" [class.border-red-500]="isFieldInvalid('name')">
             </div>
-            
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Note</label>
               <div class="flex gap-2">
@@ -5512,67 +5550,85 @@ Lignes:      214
                 </button>
               </div>
             </div>
-
             <div>
               <label class="block text-sm font-medium text-gray-700">Message (Min 10 caractères)</label>
-              <textarea formControlName="message" rows="3" 
-                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"
-                        [class.border-red-500]="isFieldInvalid('message')"></textarea>
-              <p *ngIf="isFieldInvalid('message')" class="text-red-500 text-xs mt-1">Message trop court.</p>
+              <textarea formControlName="message" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500" [class.border-red-500]="isFieldInvalid('message')"></textarea>
             </div>
-
             <div class="bg-gray-50 p-3 rounded border border-gray-200">
               <label class="block text-sm font-bold text-gray-700 mb-1">Combien font {{captchaA}} + {{captchaB}} ?</label>
-              <input type="number" formControlName="captcha" placeholder="Votre réponse" 
-                     class="block w-24 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500"
-                     [class.border-red-500]="isFieldInvalid('captcha')">
-              <p *ngIf="isFieldInvalid('captcha')" class="text-red-500 text-xs mt-1">Calcul requis.</p>
+              <input type="number" formControlName="captcha" placeholder="Votre réponse" class="block w-24 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500" [class.border-red-500]="isFieldInvalid('captcha')">
             </div>
           </div>
         </div>
-        
         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse items-center gap-3">
-          <button type="submit" 
-                  [disabled]="isSubmittingFeedback" 
-                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ isSubmittingFeedback ? 'Envoi...' : 'Envoyer' }}
-          </button>
-          <button type="button" (click)="closeFeedbackModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-            Annuler
-          </button>
+          <button type="submit" [disabled]="isSubmittingFeedback" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">{{ isSubmittingFeedback ? 'Envoi...' : 'Envoyer' }}</button>
+          <button type="button" (click)="closeFeedbackModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Annuler</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<div *ngIf="lightboxOpen && selectedGallery" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 transition-opacity duration-300" (click)="closeLightbox()">
-  <button class="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-[110]" (click)="closeLightbox()">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+<div *ngIf="isLightboxOpen" 
+     class="fixed inset-0 z-[150] bg-black/95 flex items-center justify-center backdrop-blur-md transition-opacity duration-300" 
+     (click)="closeLightbox()">
+  
+  <button class="absolute top-4 right-4 z-[160] p-3 text-white bg-black/50 hover:bg-red-600 rounded-full transition-colors border border-white/20" 
+          (click)="closeLightbox()">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
   </button>
-  <button *ngIf="selectedGallery.images.length > 1" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block hover:bg-black/20 rounded-full transition-all" (click)="prevImage($event)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+
+  <button *ngIf="lightboxItems.length > 1"
+          class="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 z-[160] p-4 text-white bg-black/50 hover:bg-white/20 rounded-full transition-all border border-white/20" 
+          (click)="$event.stopPropagation(); prevMedia($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+    </svg>
   </button>
-  <button *ngIf="selectedGallery.images.length > 1" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block hover:bg-black/20 rounded-full transition-all" (click)="nextImage($event)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+
+  <button *ngIf="lightboxItems.length > 1"
+          class="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 z-[160] p-4 text-white bg-black/50 hover:bg-white/20 rounded-full transition-all border border-white/20" 
+          (click)="$event.stopPropagation(); nextMedia($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
   </button>
-  <div class="relative max-w-7xl w-full h-full flex flex-col items-center justify-center" (click)="$event.stopPropagation()">
-    <img [src]="selectedGallery.images[currentImageIndex]" alt="Gallery Image" class="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl animate-fade-in select-none">
-    <div class="absolute bottom-4 left-0 right-0 text-center text-white/80 pointer-events-none">
-      <p class="text-lg font-bold mb-1">{{ selectedGallery.name }}</p>
-      <p class="text-sm">{{ currentImageIndex + 1 }} / {{ selectedGallery.images.length }}</p>
+
+  <div class="relative max-w-7xl w-full h-full flex flex-col items-center justify-center p-2" (click)="$event.stopPropagation()">
+    
+    <img *ngIf="lightboxItems[lightboxIndex].type === 'image'" 
+         [src]="lightboxItems[lightboxIndex].url" 
+         class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl animate-fade-in select-none">
+    
+    <video *ngIf="lightboxItems[lightboxIndex].type === 'video'" 
+           [src]="lightboxItems[lightboxIndex].url" 
+           controls autoplay
+           class="max-w-full max-h-[85vh] w-auto rounded shadow-2xl outline-none border border-gray-800">
+    </video>
+
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/90 text-sm bg-black/60 px-4 py-1 rounded-full border border-white/10 backdrop-blur-sm">
+      {{ lightboxIndex + 1 }} / {{ lightboxItems.length }}
     </div>
   </div>
 </div>
 
 ====================================
 FICHIER: ./src/app/pages/reservations/reservations.component.html
-Lignes:      283
+Lignes:      289
 ====================================
 
 <div class="min-h-screen bg-gray-50 py-12">
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
     
+    <a routerLink="/" class="inline-flex items-center text-gray-500 hover:text-blue-600 mb-6 transition-colors group cursor-pointer no-underline select-none">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Retour à l'accueil
+    </a>
+
     <div class="text-center mb-12">
       <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">Réservez Votre Expérience</h1>
       <p class="mt-4 text-lg text-gray-600">Choisissez votre aventure : une évasion en mer ou un événement inoubliable sur terre.</p>
@@ -5700,7 +5756,6 @@ Lignes:      283
             {{ isSubmitting ? 'Traitement...' : 'Réserver le Bateau' }}
           </button>
         </form>
-
 
         <form *ngIf="activeTab === 'park'" [formGroup]="parkForm" (ngSubmit)="onSubmit()" class="space-y-6">
           
@@ -5835,7 +5890,7 @@ Lignes:      283
             <div class="flex justify-between">
               <span>Date:</span>
               <span class="font-medium text-white">
-                {{ (activeTab === 'boat' ? boatForm.get('date')?.value : parkForm.get('date')?.value) | date:'mediumDate' }}
+                 {{ (activeTab === 'boat' ? boatForm.get('date')?.value : parkForm.get('date')?.value) | date:'mediumDate' }}
               </span>
             </div>
           </div>
@@ -5991,15 +6046,12 @@ Lignes:        3
 
 ====================================
 FICHIER: ./src/app/components/footer/footer.component.scss
-Lignes:        7
+Lignes:        4
 ====================================
 
 :host {
-  display: block;        /* OBLIGATOIRE pour que le footer ait une hauteur */
-  width: 100%;           /* Prend toute la largeur */
-  position: relative;    /* Permet le z-index */
-  z-index: 50;           /* Au-dessus du reste */
-  background-color: #111827; /* Gris très foncé (Tailwind gray-900) pour éviter le blanc */
+  display: block;
+  width: 100%;
 }
 
 ====================================
@@ -6012,7 +6064,7 @@ Lignes:       12
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
 }
 
@@ -6349,6 +6401,6 @@ Lignes:      175
   RÉSUMÉ
 ====================================
 Total fichiers: 88
-Total lignes: 5685
-Date: Fri Dec 12 19:05:58 CET 2025
+Total lignes: 5737
+Date: Fri Dec 12 21:33:01 CET 2025
 ====================================

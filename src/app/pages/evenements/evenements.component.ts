@@ -11,10 +11,11 @@ interface LightboxItem {
   url: string;
 }
 
+import { FooterComponent } from '../../components/footer/footer.component';
 @Component({
   selector: 'app-evenements',
   standalone: true,
-  imports: [CommonModule, DatePipe, RouterModule],
+  imports: [CommonModule, DatePipe, RouterModule, FooterComponent],
   templateUrl: './evenements.component.html',
   styleUrls: ['./evenements.component.scss']
 })
