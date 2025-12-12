@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+@keyframes pulseSlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(24, 119, 242, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(24, 119, 242, 0);
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 3s infinite;
+}
+
+/* Fallback Iframe */
+iframe {
+  filter: grayscale(20%) contrast(1.1);
+  transition: filter 0.3s;
+}
+
+iframe:hover {
+  filter: grayscale(0%);
+}

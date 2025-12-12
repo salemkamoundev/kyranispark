@@ -1,0 +1,283 @@
+<div class="min-h-screen bg-gray-50 py-12">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <div class="text-center mb-12">
+      <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">Réservez Votre Expérience</h1>
+      <p class="mt-4 text-lg text-gray-600">Choisissez votre aventure : une évasion en mer ou un événement inoubliable sur terre.</p>
+    </div>
+
+    <div class="flex justify-center mb-8">
+      <div class="bg-white p-1 rounded-xl shadow-sm inline-flex">
+        <button (click)="switchTab('boat')"
+                [class]="activeTab === 'boat' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-900'"
+                class="px-8 py-3 rounded-lg text-sm font-medium transition-all duration-200">
+          Excursion Bateau
+        </button>
+        <button (click)="switchTab('park')"
+                [class]="activeTab === 'park' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-900'"
+                class="px-8 py-3 rounded-lg text-sm font-medium transition-all duration-200 ml-2">
+          Espace Privé
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="submitSuccess" class="mb-8 bg-green-50 border-l-4 border-green-400 p-4 rounded-md animate-fade-in-up">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-green-700 font-medium">
+            Votre demande de réservation a été envoyée avec succès !
+          </p>
+          <p class="text-sm text-green-600 mt-1">
+            Notre équipe vous contactera sous peu pour confirmer les détails.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+      
+      <div class="p-8 md:w-2/3">
+        
+        <form *ngIf="activeTab === 'boat'" [formGroup]="boatForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          
+          <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Nom Complet *</label>
+              <input type="text" formControlName="fullName" 
+                     [class.border-red-500]="isFieldInvalid('fullName')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+              <p *ngIf="isFieldInvalid('fullName')" class="mt-1 text-xs text-red-500">Nom requis (min 3 caractères)</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Email *</label>
+              <input type="email" formControlName="email"
+                     [class.border-red-500]="isFieldInvalid('email')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+              <p *ngIf="isFieldInvalid('email')" class="mt-1 text-xs text-red-500">Email invalide</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Téléphone *</label>
+              <input type="text" formControlName="phone" placeholder="+216..."
+                     [class.border-red-500]="isFieldInvalid('phone')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+              <p *ngIf="isFieldInvalid('phone')" class="mt-1 text-xs text-red-500">Format requis: +216xxxxxxxx</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Date de sortie *</label>
+              <input type="date" formControlName="date" [min]="minDate"
+                     [class.border-red-500]="isFieldInvalid('date')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Heure de départ *</label>
+              <input type="time" formControlName="time"
+                     [class.border-red-500]="isFieldInvalid('time')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Type de Bateau *</label>
+              <select formControlName="boatType"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border bg-white">
+                <option value="flouka">Flouka Traditionnelle</option>
+                <option value="speed_boat">Speed Boat</option>
+                <option value="catamaran">Catamaran</option>
+                <option value="yacht">Yacht Privé</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Personnes (1-50) *</label>
+              <input type="number" formControlName="numberOfPeople" min="1" max="50"
+                     [class.border-red-500]="isFieldInvalid('numberOfPeople')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Demandes Spéciales</label>
+              <textarea formControlName="specialRequests" rows="3"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"></textarea>
+            </div>
+
+            <div class="sm:col-span-2">
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input id="terms" type="checkbox" formControlName="acceptTerms"
+                         class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="terms" class="font-medium text-gray-700">J'accepte les conditions générales</label>
+                  <p *ngIf="isFieldInvalid('acceptTerms')" class="text-red-500 text-xs mt-1">Vous devez accepter les conditions.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" [disabled]="boatForm.invalid || isSubmitting"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+            <span *ngIf="isSubmitting" class="animate-spin mr-2">⟳</span>
+            {{ isSubmitting ? 'Traitement...' : 'Réserver le Bateau' }}
+          </button>
+        </form>
+
+
+        <form *ngIf="activeTab === 'park'" [formGroup]="parkForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          
+          <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+             <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Nom Complet *</label>
+              <input type="text" formControlName="fullName" 
+                     [class.border-red-500]="isFieldInvalid('fullName')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Email *</label>
+              <input type="email" formControlName="email"
+                     [class.border-red-500]="isFieldInvalid('email')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Téléphone *</label>
+              <input type="text" formControlName="phone" placeholder="+216..."
+                     [class.border-red-500]="isFieldInvalid('phone')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Date de l'événement *</label>
+              <input type="date" formControlName="date" [min]="minDate"
+                     [class.border-red-500]="isFieldInvalid('date')"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Type d'événement *</label>
+              <select formControlName="eventType"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border bg-white">
+                <option value="birthday">Anniversaire</option>
+                <option value="marriage">Mariage / Fiançailles</option>
+                <option value="conference">Conférence / Pro</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Durée *</label>
+              <select formControlName="duration"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border bg-white">
+                <option value="half_day">Demi-journée (4h)</option>
+                <option value="full_day">Journée complète (8h)</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Nombre d'invités (Max 200)</label>
+              <input type="number" formControlName="numberOfPeople" min="10" max="200"
+                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
+            </div>
+
+            <div class="flex items-center pt-6">
+              <input id="menu" type="checkbox" formControlName="menuIncluded"
+                     class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+              <label for="menu" class="ml-2 block text-sm text-gray-900">
+                Inclure Service Traiteur (+50 TND/pers)
+              </label>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-gray-700">Détails supplémentaires</label>
+              <textarea formControlName="specialRequests" rows="3"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"></textarea>
+            </div>
+
+            <div class="sm:col-span-2">
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input id="termsPark" type="checkbox" formControlName="acceptTerms"
+                         class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="termsPark" class="font-medium text-gray-700">J'accepte les conditions générales</label>
+                  <p *ngIf="isFieldInvalid('acceptTerms')" class="text-red-500 text-xs mt-1">Requis.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" [disabled]="parkForm.invalid || isSubmitting"
+                  class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+            <span *ngIf="isSubmitting" class="animate-spin mr-2">⟳</span>
+            {{ isSubmitting ? 'Traitement...' : 'Demander un Devis' }}
+          </button>
+        </form>
+
+      </div>
+
+      <div class="bg-gray-900 p-8 md:w-1/3 text-white flex flex-col justify-between">
+        <div>
+          <h3 class="text-xl font-bold mb-6 border-b border-gray-700 pb-2">Récapitulatif</h3>
+          
+          <div class="space-y-4 text-sm text-gray-300">
+            <div class="flex justify-between">
+              <span>Type:</span>
+              <span class="font-medium text-white capitalize">{{ activeTab === 'boat' ? 'Sortie Bateau' : 'Espace Privé' }}</span>
+            </div>
+            
+            <ng-container *ngIf="activeTab === 'boat'">
+               <div class="flex justify-between">
+                 <span>Bateau:</span>
+                 <span class="font-medium text-white capitalize">{{ boatForm.get('boatType')?.value }}</span>
+               </div>
+               <div class="flex justify-between">
+                 <span>Personnes:</span>
+                 <span class="font-medium text-white">{{ boatForm.get('numberOfPeople')?.value }}</span>
+               </div>
+            </ng-container>
+
+            <ng-container *ngIf="activeTab === 'park'">
+               <div class="flex justify-between">
+                 <span>Événement:</span>
+                 <span class="font-medium text-white capitalize">{{ parkForm.get('eventType')?.value }}</span>
+               </div>
+               <div class="flex justify-between">
+                 <span>Invités:</span>
+                 <span class="font-medium text-white">{{ parkForm.get('numberOfPeople')?.value }}</span>
+               </div>
+               <div class="flex justify-between" *ngIf="parkForm.get('menuIncluded')?.value">
+                 <span>Traiteur:</span>
+                 <span class="font-medium text-green-400">Inclus</span>
+               </div>
+            </ng-container>
+
+            <div class="flex justify-between">
+              <span>Date:</span>
+              <span class="font-medium text-white">
+                {{ (activeTab === 'boat' ? boatForm.get('date')?.value : parkForm.get('date')?.value) | date:'mediumDate' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-10">
+          <p class="text-sm text-gray-400 uppercase tracking-wide">Total Estimé</p>
+          <div class="text-4xl font-bold text-white mt-2">
+            {{ estimatedPrice }} <span class="text-lg text-gray-400 font-normal">TND</span>
+          </div>
+          <p class="text-xs text-gray-500 mt-2 italic">*Le prix final peut varier selon les options confirmées.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

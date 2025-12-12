@@ -1,0 +1,20 @@
+:host {
+  display: block;
+}
+
+/* Animation simple pour l'apparition du message succès */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Focus styles pour accessibilité et esthétique */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #2563eb; /* blue-600 */
+  ring: 2px;
+}

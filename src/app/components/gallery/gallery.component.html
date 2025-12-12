@@ -1,0 +1,78 @@
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+  
+  <div *ngFor="let item of items; let i = index" 
+       class="group relative aspect-square overflow-hidden rounded-xl bg-gray-100 cursor-pointer shadow-sm hover:shadow-lg transition-all"
+       (click)="openLightbox(i)">
+    
+    <img *ngIf="item.type === 'image'" 
+         [src]="item.url" 
+         loading="lazy"
+         alt="Gallery item"
+         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+
+    <video *ngIf="item.type === 'video'"
+           [src]="item.url"
+           muted
+           class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+    </video>
+
+    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+      
+      <svg *ngIf="item.type === 'image'" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+      </svg>
+
+      <div *ngIf="item.type === 'video'" class="bg-white/30 backdrop-blur-sm rounded-full p-2 group-hover:bg-white/50 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="isOpen" 
+     class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300"
+     (click)="closeLightbox()">
+  
+  <button class="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-[110]" 
+          (click)="closeLightbox()">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  </button>
+
+  <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block" 
+          (click)="$event.stopPropagation(); prev()">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block" 
+          (click)="$event.stopPropagation(); next()">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+    </svg>
+  </button>
+
+  <div class="relative max-w-7xl w-full max-h-screen p-4 flex items-center justify-center" 
+       (click)="$event.stopPropagation()">
+    
+    <img *ngIf="items[currentIndex].type === 'image'" 
+         [src]="items[currentIndex].url" 
+         class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl animate-fade-in">
+    
+    <video *ngIf="items[currentIndex].type === 'video'" 
+           [src]="items[currentIndex].url" 
+           controls 
+           autoplay
+           class="max-w-full max-h-[85vh] w-auto rounded shadow-2xl outline-none border-none">
+    </video>
+
+    <div class="absolute bottom-[-40px] left-1/2 -translate-x-1/2 text-white/50 text-sm">
+      {{ currentIndex + 1 }} / {{ items.length }}
+    </div>
+  </div>
+</div>

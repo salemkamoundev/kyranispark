@@ -1,0 +1,172 @@
+<div class="min-h-screen bg-gray-50 pt-20 pb-12 relative">
+  
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-extrabold text-gray-900">Contactez-nous</h1>
+      <p class="mt-4 text-xl text-gray-600">Une question ? Une réservation ? Nous sommes à votre écoute.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+      
+      <div class="space-y-8">
+        <div class="bg-white rounded-2xl shadow-lg p-8 border-l-4 border-blue-600">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Informations</h2>
+          
+          <div class="space-y-6">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Appelez-nous</p>
+                <p class="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight text-blue-600">
+                  +216 28 417 822
+                </p>
+                <p class="text-xs text-gray-400 mt-1">Du Lundi au Dimanche, 09h - 22h</p>
+              </div>
+            </div>
+
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Email</p>
+                <p class="text-lg font-medium text-gray-900">contact@kyranispark.tn</p>
+              </div>
+            </div>
+
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Adresse</p>
+                <p class="text-lg font-medium text-gray-900">Zone Touristique, Îles Kerkennah</p>
+                <p class="text-gray-600">Monastir, Tunisie</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden h-80 w-full relative">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d51806.9634718507!2d11.238497647230094!3d34.69741005701416!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x130198661266e74f%3A0x64e29452296e053f!2sKerkennah!5e0!3m2!1sfr!2stn!4v1700000000000!5m2!1sfr!2stn" 
+            width="100%" 
+            height="100%" 
+            style="border:0;" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-xl p-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Envoyez-nous un message</h2>
+
+        <div *ngIf="submitSuccess" class="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded animate-bounce-in">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-green-700 font-medium">Message envoyé avec succès !</p>
+              <p class="text-sm text-green-600">Nous vous répondrons dans les plus brefs délais.</p>
+            </div>
+          </div>
+        </div>
+
+        <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Nom Complet *</label>
+            <input type="text" formControlName="name" 
+                   [class.border-red-500]="isFieldInvalid('name')"
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 border">
+            <p *ngIf="isFieldInvalid('name')" class="mt-1 text-xs text-red-500">Ce champ est requis.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Email *</label>
+            <input type="email" formControlName="email" 
+                   [class.border-red-500]="isFieldInvalid('email')"
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 border">
+            <p *ngIf="isFieldInvalid('email')" class="mt-1 text-xs text-red-500">Email valide requis.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Téléphone (Optionnel)</label>
+            <input type="text" formControlName="phone" 
+                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 border">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Sujet *</label>
+            <select formControlName="subject" 
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 border bg-white">
+              <option value="Réservation">Réservation</option>
+              <option value="Question">Question Générale</option>
+              <option value="Réclamation">Réclamation</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Message *</label>
+            <textarea formControlName="message" rows="5" 
+                      [class.border-red-500]="isFieldInvalid('message')"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3 px-4 border"></textarea>
+            <p *ngIf="isFieldInvalid('message')" class="mt-1 text-xs text-red-500">Minimum 10 caractères.</p>
+          </div>
+
+          <div class="flex items-start">
+            <div class="flex items-center h-5">
+              <input id="terms" type="checkbox" formControlName="acceptTerms" 
+                     class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+            </div>
+            <div class="ml-3 text-sm">
+              <label for="terms" class="font-medium text-gray-700">J'accepte que mes données soient traitées pour répondre à ma demande.</label>
+              <p *ngIf="isFieldInvalid('acceptTerms')" class="mt-1 text-xs text-red-500">Vous devez accepter les conditions.</p>
+            </div>
+          </div>
+
+          <button type="submit" [disabled]="contactForm.invalid || isSubmitting"
+                  class="w-full flex justify-center py-4 px-4 border border-transparent rounded-lg shadow-sm text-lg font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:scale-[1.02] disabled:bg-gray-400 disabled:scale-100 disabled:cursor-not-allowed">
+            <span *ngIf="isSubmitting" class="animate-spin mr-2">⟳</span>
+            {{ isSubmitting ? 'Envoi en cours...' : 'Envoyer le Message' }}
+          </button>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <a href="https://facebook.com/kyranispark" target="_blank" 
+     class="fixed bottom-6 right-6 z-50 flex items-center justify-center w-16 h-16 bg-[#1877F2] rounded-full shadow-2xl hover:scale-110 transition-transform duration-300 group animate-pulse-slow">
+    <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+    
+    <span class="absolute right-20 bg-gray-900 text-white text-xs font-bold py-1 px-3 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+      Suivez-nous !
+    </span>
+  </a>
+
+</div>

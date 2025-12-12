@@ -1,0 +1,8 @@
+:host {
+  display: block;
+}
+
+/* Fallback simple si pas d'image chargée */
+.bg-gray-50 {
+  min-height: 200px;
+}

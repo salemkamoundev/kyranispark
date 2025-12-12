@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Bloquer l'indexation des pages d'administration et de login
+Disallow: /admin/
+Disallow: /admin-login/
+
+# Indiquer l'emplacement du sitemap
+Sitemap: https://kyranispark.tn/sitemap.xml
