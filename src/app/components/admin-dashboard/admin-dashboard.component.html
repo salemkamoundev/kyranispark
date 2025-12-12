@@ -13,28 +13,54 @@
     </div>
 
     <nav class="flex-1 px-2 py-4 space-y-2">
+      
       <a routerLink="/admin/stats" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-        Dashboard
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+          Dashboard
+        </div>
       </a>
 
       <a routerLink="/admin/events" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-        Événements
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          Événements
+        </div>
+        <span *ngIf="eventCount$ | async as count" class="bg-gray-700 text-gray-200 py-0.5 px-2.5 rounded-full text-xs font-bold border border-gray-600">
+          {{ count }}
+        </span>
       </a>
 
       <a routerLink="/admin/reservations" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-        Réservations
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+          Réservations
+        </div>
+        <ng-container *ngIf="reservationCount$ | async as count">
+          <span [class]="count > 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-700 text-gray-400'" 
+                class="py-0.5 px-2.5 rounded-full text-xs font-bold shadow-sm">
+            {{ count }}
+          </span>
+        </ng-container>
+      </a>
+
+      <a routerLink="/admin/gallery" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+         <div class="flex items-center">
+            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            Galerie Média
+         </div>
       </a>
 
       <a routerLink="/admin/settings" routerLinkActive="bg-blue-600"
-         class="flex items-center px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        Paramètres
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Paramètres
+        </div>
       </a>
     </nav>
 

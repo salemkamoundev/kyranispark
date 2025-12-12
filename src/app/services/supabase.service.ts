@@ -23,7 +23,7 @@ export class SupabaseService {
    */
   async uploadImage(file: File, folder: string = 'images'): Promise<FileUploadResponse> {
     const filePath = `${folder}/${Date.now()}-${file.name}`;
-    
+
     const { data, error } = await this.supabase.storage
       .from(this.BUCKET_NAME)
       .upload(filePath, file, {
@@ -43,12 +43,11 @@ export class SupabaseService {
   }
 
   /**
-   * Upload d'une vidéo (logique séparée pour gestion potentielle de gros fichiers)
+   * Upload d'une vidéo
    */
   async uploadVideo(file: File, folder: string = 'videos'): Promise<FileUploadResponse> {
     const filePath = `${folder}/${Date.now()}-${file.name}`;
     
-    // Pour les vidéos, on peut vouloir augmenter le timeout ou gérer les chunks
     const { data, error } = await this.supabase.storage
       .from(this.BUCKET_NAME)
       .upload(filePath, file, {
@@ -68,7 +67,7 @@ export class SupabaseService {
   }
 
   /**
-   * Supprime un fichier via son chemin
+   * Supprime un fichier via son chemin interne
    */
   async deleteFile(path: string): Promise<void> {
     const { error } = await this.supabase.storage
@@ -81,13 +80,36 @@ export class SupabaseService {
   }
 
   /**
+   * Tente de supprimer un fichier à partir de son URL publique
+   * Extrait le chemin relatif à partir de l'URL.
+   */
+  async deleteFileByUrl(url: string): Promise<void> {
+    try {
+      // Structure URL typique: .../storage/v1/object/public/BUCKET_NAME/folder/file.jpg
+      const bucketMarker = `/public/${this.BUCKET_NAME}/`;
+      const parts = url.split(bucketMarker);
+      
+      if (parts.length === 2) {
+        const path = parts[1];
+        // Décoder l'URL au cas où il y aurait des espaces (%20)
+        await this.deleteFile(decodeURIComponent(path));
+      } else {
+        console.warn('Impossible d\'extraire le chemin Supabase de l\'URL:', url);
+      }
+    } catch (e) {
+      console.error('Erreur lors de la suppression Supabase:', e);
+      throw e;
+    }
+  }
+
+  /**
    * Obtient l'URL publique d'un fichier
    */
   getFileUrl(path: string): string {
     const { data } = this.supabase.storage
       .from(this.BUCKET_NAME)
       .getPublicUrl(path);
-    
+
     return data.publicUrl;
   }
 }

@@ -52,7 +52,6 @@ export class ReservationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.initForms();
-
     // Vérifier les query params pour pré-sélectionner l'onglet
     this.route.queryParams.subscribe(params => {
       if (params['type'] === 'park') {
@@ -109,7 +108,7 @@ export class ReservationsComponent implements OnInit {
       const type = this.boatForm.get('boatType')?.value;
       const basePrice = this.boatPrices[type] || 0;
       // Exemple simple: Prix fixe par bateau (pourrait être par personne)
-      this.estimatedPrice = basePrice; 
+      this.estimatedPrice = basePrice;
     } else {
       const type = this.parkForm.get('eventType')?.value;
       const duration = this.parkForm.get('duration')?.value;
@@ -117,10 +116,10 @@ export class ReservationsComponent implements OnInit {
       const pax = this.parkForm.get('numberOfPeople')?.value || 0;
 
       let price = this.eventPrices[type] || 0;
-
+      
       // Facteur durée
       if (duration === 'full_day') price *= 1.5;
-
+      
       // Facteur menu (ex: 50 TND par personne)
       if (menu) price += (pax * 50);
 
@@ -134,23 +133,27 @@ export class ReservationsComponent implements OnInit {
 
     if (currentForm.invalid) {
       this.isSubmitting = false;
-      currentForm.markAllAsTouched(); // Affiche toutes les erreurs
+      currentForm.markAllAsTouched();
+      // Affiche toutes les erreurs
       return;
     }
 
     const formValues = currentForm.value;
 
     // Construction de l'objet Reservation
+    // FIX: Utilisation de null au lieu de undefined pour Firestore
     const reservationData: Reservation = {
       type: this.activeTab,
       fullName: formValues.fullName,
       email: formValues.email,
       phone: formValues.phone,
       date: new Date(formValues.date),
-      time: this.activeTab === 'boat' ? formValues.time : '00:00', // Time non requis pour Park event (souvent toute la journée)
+      time: this.activeTab === 'boat' ? formValues.time : '00:00',
       numberOfPeople: formValues.numberOfPeople,
-      boatType: this.activeTab === 'boat' ? formValues.boatType : undefined,
-      eventType: this.activeTab === 'park' ? formValues.eventType : undefined,
+      
+      boatType: this.activeTab === 'boat' ? formValues.boatType : null,
+      eventType: this.activeTab === 'park' ? formValues.eventType : null,
+      
       specialRequests: formValues.specialRequests,
       status: 'pending',
       totalPrice: this.estimatedPrice,

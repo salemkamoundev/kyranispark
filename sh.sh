@@ -1,155 +1,163 @@
 #!/bin/bash
 
-# Configuration des couleurs
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
+echo "=================================================="
+echo "  AJOUT DES BADGES DE NOTIFICATION (ADMIN)"
+echo "=================================================="
 
-echo -e "${BLUE}=== Optimisation des Performances & PWA ===${NC}"
+# 1. MISE A JOUR DU COMPOSANT TS
+# On injecte FirestoreService et on crée les observables de comptage
+echo "1. Mise à jour de admin-dashboard.component.ts..."
 
-# 1. Installation de la PWA (Service Worker + Manifest)
-echo -e "${GREEN}[1/4] Installation de @angular/pwa...${NC}"
-# Cette commande génère ngsw-config.json, manifest.webmanifest et les icônes
-# --skip-confirmation évite de bloquer le script
-if [ ! -f "ngsw-config.json" ]; then
-    ng add @angular/pwa --project kyranispark --skip-confirmation
-else
-    echo -e "${YELLOW}PWA déjà configurée (ngsw-config.json détecté).${NC}"
-fi
+cat << 'EOF' > ./src/app/components/admin-dashboard/admin-dashboard.component.ts
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import { FirestoreService } from '../../services/firestore.service';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { User } from '@angular/fire/auth';
 
-# 2. Code Splitting (Lazy Loading des Routes)
-echo -e "${GREEN}[2/4] Activation du Lazy Loading des Routes (app.routes.ts)...${NC}"
+@Component({
+  selector: 'app-admin-dashboard',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  templateUrl: './admin-dashboard.component.html',
+  styleUrls: ['./admin-dashboard.component.scss']
+})
+export class AdminDashboardComponent {
+  private authService = inject(AuthService);
+  private firestoreService = inject(FirestoreService);
+  private router = inject(Router);
 
-# On réécrit le fichier de routes pour utiliser loadComponent()
-# Cela crée un fichier JS séparé (chunk) pour chaque page, chargé uniquement quand nécessaire.
+  currentUser$: Observable<User | null> = this.authService.getCurrentUser();
+  
+  // Compte uniquement les réservations 'pending' (En attente) pour la notification
+  reservationCount$: Observable<number> = this.firestoreService.getReservations().pipe(
+    map(reservations => reservations.filter(r => r.status === 'pending').length)
+  );
 
-cat <<'EOF' > src/app/app.routes.ts
-import { Routes } from '@angular/router';
-import { adminGuard } from './guards/admin.guard';
-import { PageNotFoundComponent } from './pages/page-not-found/page-not-found.component';
+  // Compte tous les événements
+  eventCount$: Observable<number> = this.firestoreService.getEvents().pipe(
+    map(events => events.length)
+  );
 
-export const routes: Routes = [
-  // --- ROUTES PUBLIQUES (Lazy Loaded) ---
-  { 
-    path: '', 
-    loadComponent: () => import('./pages/home/home.component').then(m => m.HomeComponent) 
-  },
-  { 
-    path: 'evenements', 
-    loadComponent: () => import('./pages/evenements/evenements.component').then(m => m.EvenementsComponent) 
-  },
-  { 
-    path: 'reservations', 
-    loadComponent: () => import('./pages/reservations/reservations.component').then(m => m.ReservationsComponent) 
-  },
-  { 
-    path: 'contact', 
-    loadComponent: () => import('./pages/contact/contact.component').then(m => m.ContactComponent) 
-  },
-  { 
-    path: 'admin-login', 
-    loadComponent: () => import('./pages/admin-login/admin-login.component').then(m => m.AdminLoginComponent) 
-  },
+  isSidebarOpen = false;
 
-  // --- ADMIN ROUTES (Lazy Loaded Children) ---
-  { 
-    path: 'admin', 
-    loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent),
-    canActivate: [adminGuard],
-    children: [
-      { path: '', redirectTo: 'stats', pathMatch: 'full' },
-      { 
-        path: 'stats', 
-        loadComponent: () => import('./components/admin-dashboard/dashboard-stats/dashboard-stats.component').then(m => m.DashboardStatsComponent) 
-      },
-      { 
-        path: 'events', 
-        loadComponent: () => import('./components/admin-dashboard/manage-events/manage-events.component').then(m => m.ManageEventsComponent) 
-      },
-      { 
-        path: 'reservations', 
-        loadComponent: () => import('./components/admin-dashboard/manage-reservations/manage-reservations.component').then(m => m.ManageReservationsComponent) 
-      },
-      { 
-        path: 'settings', 
-        loadComponent: () => import('./components/admin-dashboard/settings/settings.component').then(m => m.SettingsComponent) 
-      }
-    ]
-  },
+  toggleSidebar() {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
 
-  // --- 404 ---
-  { path: '**', component: PageNotFoundComponent }
-];
-EOF
-
-# 3. Image Lazy Loading (Native)
-echo -e "${GREEN}[3/4] Ajout de loading='lazy' aux images non critiques...${NC}"
-
-# Fonction pour ajouter loading="lazy" aux balises img qui ne l'ont pas
-# Note: On évite le HeroSlider car il doit charger immédiatement (LCP)
-
-# Gallery Component
-if [ -f src/app/components/gallery/gallery.component.html ]; then
-    sed -i 's/<img /<img loading="lazy" /g' src/app/components/gallery/gallery.component.html
-    echo -e "✓ Galerie optimisée."
-fi
-
-# Events Component (Grille)
-if [ -f src/app/pages/evenements/evenements.component.html ]; then
-    # On remplace img [src] par img loading="lazy" [src]
-    sed -i 's/<img \[src\]/<img loading="lazy" [src]/g' src/app/pages/evenements/evenements.component.html
-    echo -e "✓ Page Événements optimisée."
-fi
-
-# 4. Configuration Firebase Hosting (Compression & Caching)
-echo -e "${GREEN}[4/4] Configuration Headers Firebase (Cache & Compression)...${NC}"
-
-# Firebase compresse automatiquement en Gzip/Brotli.
-# On ajoute ici les règles de cache agressif pour les assets statiques (JS, CSS, Images).
-
-cat <<EOF > firebase.json
-{
-  "hosting": {
-    "public": "dist/kyranispark/browser",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.@(jpg|jpeg|gif|png|webp|svg|css|js|woff|woff2)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000, immutable"
-          }
-        ]
-      },
-      {
-        "source": "sw.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
-      }
-    ]
+  async logout() {
+    await this.authService.logout();
+    this.router.navigate(['/']);
   }
 }
 EOF
 
-echo -e "${BLUE}=== Optimisations terminées ! ===${NC}"
-echo -e "${GREEN}1. PWA installée (sw.js généré au build).${NC}"
-echo -e "${GREEN}2. Routes lazy-loadées (fichiers JS plus petits au démarrage).${NC}"
-echo -e "${GREEN}3. Images secondaires en lazy-load.${NC}"
-echo -e "${GREEN}4. Cache Headers configurés pour Firebase.${NC}"
-echo -e "${YELLOW}Note : Pour tester la PWA, il faut faire un build de prod et servir le dossier dist (ng serve ne supporte pas bien les Service Workers).${NC}"
+# 2. MISE A JOUR DU TEMPLATE HTML
+# On ajoute les badges (span) avec le pipe async
+echo "2. Mise à jour de admin-dashboard.component.html..."
+
+cat << 'EOF' > ./src/app/components/admin-dashboard/admin-dashboard.component.html
+<div class="flex h-screen bg-gray-100 font-sans">
+
+  <div *ngIf="isSidebarOpen" 
+       class="fixed inset-0 z-20 bg-black opacity-50 transition-opacity lg:hidden" 
+       (click)="toggleSidebar()"></div>
+
+  <aside [class.translate-x-0]="isSidebarOpen"
+         [class.-translate-x-full]="!isSidebarOpen"
+         class="fixed inset-y-0 left-0 z-30 w-64 overflow-y-auto bg-gray-900 text-white transition duration-300 transform lg:translate-x-0 lg:static lg:inset-0 flex flex-col">
+    
+    <div class="flex items-center justify-center h-16 bg-gray-800 border-b border-gray-700 shadow-md">
+      <span class="text-xl font-bold tracking-wider text-blue-400">KYRANIS<span class="text-white">PARK</span></span>
+    </div>
+
+    <nav class="flex-1 px-2 py-4 space-y-2">
+      
+      <a routerLink="/admin/stats" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+          Dashboard
+        </div>
+      </a>
+
+      <a routerLink="/admin/events" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          Événements
+        </div>
+        <span *ngIf="eventCount$ | async as count" class="bg-gray-700 text-gray-200 py-0.5 px-2.5 rounded-full text-xs font-bold border border-gray-600">
+          {{ count }}
+        </span>
+      </a>
+
+      <a routerLink="/admin/reservations" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+          Réservations
+        </div>
+        <ng-container *ngIf="reservationCount$ | async as count">
+          <span [class]="count > 0 ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-700 text-gray-400'" 
+                class="py-0.5 px-2.5 rounded-full text-xs font-bold shadow-sm">
+            {{ count }}
+          </span>
+        </ng-container>
+      </a>
+
+      <a routerLink="/admin/gallery" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+         <div class="flex items-center">
+            <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            Galerie Média
+         </div>
+      </a>
+
+      <a routerLink="/admin/settings" routerLinkActive="bg-blue-600"
+         class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg cursor-pointer hover:bg-gray-700 transition-colors group">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-3 text-gray-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Paramètres
+        </div>
+      </a>
+    </nav>
+
+    <div class="p-4 border-t border-gray-700 bg-gray-800">
+      <div class="flex items-center mb-4" *ngIf="currentUser$ | async as user">
+        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold">A</div>
+        <div class="ml-3">
+          <p class="text-sm font-medium text-white">Admin</p>
+          <p class="text-xs text-gray-400 truncate w-32">{{ user.email }}</p>
+        </div>
+      </div>
+      <button (click)="logout()" class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-red-300 bg-red-900/30 border border-red-800 rounded-md hover:bg-red-900/50 transition-colors">
+        Déconnexion
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <header class="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+      <button (click)="toggleSidebar()" class="text-gray-500 focus:outline-none lg:hidden mr-4">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+      <div class="text-xl font-semibold text-gray-800">Administration</div>
+      <div class="flex items-center gap-4">
+        <div class="w-8 h-8 rounded-full bg-gray-300"></div>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+EOF
+
+echo "Terminé. Les pastilles sont ajoutées (Rouge pour les réservations en attente)."

@@ -45,6 +45,10 @@ export const routes: Routes = [
         loadComponent: () => import('./components/admin-dashboard/manage-reservations/manage-reservations.component').then(m => m.ManageReservationsComponent) 
       },
       { 
+        path: 'gallery', 
+        loadComponent: () => import('./components/admin-dashboard/manage-gallery/manage-gallery.component').then(m => m.ManageGalleryComponent) 
+      },
+      { 
         path: 'settings', 
         loadComponent: () => import('./components/admin-dashboard/settings/settings.component').then(m => m.SettingsComponent) 
       }
