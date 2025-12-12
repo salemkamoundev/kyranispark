@@ -2,12 +2,18 @@ import { Component, OnInit, inject, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import { FirestoreService } from '../../services/firestore.service';
 import { AppSettings, Gallery, Event, Feedback } from '../../models';
 import { HeroSliderComponent } from '../../components/hero-slider/hero-slider.component';
+
+// Interface locale pour la navigation unifiée
+interface LightboxItem {
+  type: 'image' | 'video';
+  url: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -40,7 +46,7 @@ export class HomeComponent implements OnInit {
   // AVIS CLIENTS
   approvedFeedbacks$: Observable<Feedback[]> = this.firestoreService.getApprovedFeedbacks(3);
 
-  // LOGIQUE FEEDBACK & CAPTCHA
+  // FORMULAIRE AVIS
   isFeedbackModalOpen = false;
   feedbackForm: FormGroup;
   isSubmittingFeedback = false;
@@ -50,10 +56,10 @@ export class HomeComponent implements OnInit {
   
   stars: number[] = [1, 2, 3, 4, 5];
 
-  // LOGIQUE LIGHTBOX
-  lightboxOpen = false;
-  selectedGallery: Gallery | null = null;
-  currentImageIndex = 0;
+  // --- LOGIQUE LIGHTBOX PRO (Unifiée) ---
+  isLightboxOpen = false;       // État ouverture
+  lightboxItems: LightboxItem[] = []; // Liste de lecture
+  lightboxIndex = 0;            // Position actuelle
 
   constructor() {
     this.feedbackForm = this.fb.group({
@@ -68,8 +74,7 @@ export class HomeComponent implements OnInit {
     this.generateCaptcha();
   }
 
-  // --- FEEDBACK & CAPTCHA ---
-
+  // --- FEEDBACK ---
   generateCaptcha() {
     this.captchaA = Math.floor(Math.random() * 10) + 1;
     this.captchaB = Math.floor(Math.random() * 10) + 1;
@@ -92,29 +97,23 @@ export class HomeComponent implements OnInit {
   }
 
   async submitFeedback() {
-    // MODIFICATION ICI: Si invalide, on affiche les erreurs (rouge) au lieu de bloquer silencieusement
     if (this.feedbackForm.invalid) {
       this.feedbackForm.markAllAsTouched();
       return;
     }
-
     const userAnswer = parseInt(this.feedbackForm.get('captcha')?.value, 10);
     if (userAnswer !== this.captchaAnswer) {
-      alert(`Calcul incorrect (${this.captchaA} + ${this.captchaB}). Veuillez réessayer.`);
-      // On ne régénère pas forcément tout de suite pour laisser l'utilisateur corriger
+      alert(`Calcul incorrect.`);
       return;
     }
-
     this.isSubmittingFeedback = true;
     const { name, message, rating } = this.feedbackForm.value;
-
     try {
       await this.firestoreService.addFeedback({
         name,
         message,
         rating: parseInt(rating, 10),
       });
-      
       alert('Merci ! Votre avis a été envoyé et sera publié après validation.');
       this.closeFeedbackModal();
     } catch (e) {
@@ -125,40 +124,53 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  // Helper pour le HTML
   isFieldInvalid(field: string) {
     const control = this.feedbackForm.get(field);
     return control?.invalid && (control?.dirty || control?.touched);
   }
 
-  // --- LIGHTBOX ---
+  // --- GALERIE LIGHTBOX (LOGIQUE CORRIGÉE) ---
+
   openGallery(gallery: Gallery) {
-    if (!gallery.images || gallery.images.length === 0) return;
-    this.selectedGallery = gallery;
-    this.currentImageIndex = 0;
-    this.lightboxOpen = true;
+    // 1. On transforme TOUT (images + vidéos) en une liste 'lightboxItems'
+    this.lightboxItems = [
+      ...(gallery.images || []).map(url => ({ type: 'image' as const, url })),
+      ...(gallery.videos || []).map(url => ({ type: 'video' as const, url }))
+    ];
+
+    if (this.lightboxItems.length === 0) return;
+
+    // 2. On ouvre au début
+    this.lightboxIndex = 0;
+    this.isLightboxOpen = true;
     document.body.style.overflow = 'hidden';
   }
 
   closeLightbox() {
-    this.lightboxOpen = false;
-    this.selectedGallery = null;
-    this.currentImageIndex = 0;
+    this.isLightboxOpen = false;
+    this.lightboxItems = [];
     document.body.style.overflow = 'auto';
   }
 
-  nextImage(e?: any) {
-    e?.stopPropagation();
-    if (!this.selectedGallery || !this.selectedGallery.images) return;
-    this.currentImageIndex = (this.currentImageIndex < this.selectedGallery.images.length - 1) ? this.currentImageIndex + 1 : 0;
+  nextMedia(e?: any) {
+    if(e) e.stopPropagation();
+    if (this.lightboxIndex < this.lightboxItems.length - 1) {
+      this.lightboxIndex++;
+    } else {
+      this.lightboxIndex = 0; // Boucle
+    }
   }
 
-  prevImage(e?: any) {
-    e?.stopPropagation();
-    if (!this.selectedGallery || !this.selectedGallery.images) return;
-    this.currentImageIndex = (this.currentImageIndex > 0) ? this.currentImageIndex - 1 : this.selectedGallery.images.length - 1;
+  prevMedia(e?: any) {
+    if(e) e.stopPropagation();
+    if (this.lightboxIndex > 0) {
+      this.lightboxIndex--;
+    } else {
+      this.lightboxIndex = this.lightboxItems.length - 1; // Boucle
+    }
   }
 
+  // --- HELPERS ---
   getCoverImage(event: Event): string {
     if (event.galleryImages && event.galleryImages.length > 0) return event.galleryImages[0];
     return 'https://via.placeholder.com/800x600?text=Kyranis+Park';
@@ -166,10 +178,10 @@ export class HomeComponent implements OnInit {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
-    if (this.lightboxOpen) {
+    if (this.isLightboxOpen) {
       if (event.key === 'Escape') this.closeLightbox();
-      else if (event.key === 'ArrowRight') this.nextImage();
-      else if (event.key === 'ArrowLeft') this.prevImage();
+      else if (event.key === 'ArrowRight') this.nextMedia();
+      else if (event.key === 'ArrowLeft') this.prevMedia();
     }
   }
 }

@@ -2,19 +2,12 @@
   
   <div class="bg-blue-900 text-white py-12 relative">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      
       <a routerLink="/" class="inline-flex items-center text-blue-300 hover:text-white mb-6 transition-colors group cursor-pointer no-underline select-none">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Retour à l'accueil
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg> Retour à l'accueil
       </a>
-
       <div class="text-center">
         <h1 class="text-4xl md:text-5xl font-bold mb-4 text-white">Nos Événements</h1>
-        <p class="text-blue-100 text-lg max-w-2xl mx-auto">
-          Découvrez les moments magiques passés et les aventures à venir à Kyranis Park.
-        </p>
+        <p class="text-blue-100 text-lg max-w-2xl mx-auto">Découvrez les moments magiques passés et les aventures à venir à Kyranis Park.</p>
       </div>
     </div>
   </div>
@@ -28,13 +21,8 @@
   </div>
 
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-    <div *ngIf="isLoading" class="flex justify-center py-20">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
-
-    <div *ngIf="!isLoading && filteredEvents.length === 0" class="text-center py-20">
-      <p class="text-gray-500 text-lg">Aucun événement trouvé.</p>
-    </div>
+    <div *ngIf="isLoading" class="flex justify-center py-20"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+    <div *ngIf="!isLoading && filteredEvents.length === 0" class="text-center py-20"><p class="text-gray-500 text-lg">Aucun événement trouvé.</p></div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <div *ngFor="let event of filteredEvents" class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group flex flex-col h-full">
@@ -44,14 +32,11 @@
             <div class="text-sm font-bold text-gray-800">{{ event.date | date:'dd' }}</div>
             <div class="text-xs uppercase text-gray-500">{{ event.date | date:'MMM' }}</div>
           </div>
-          <div [ngClass]="isEventPast(event) ? 'bg-gray-500' : 'bg-green-500'" class="absolute top-4 left-4 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
-            {{ isEventPast(event) ? 'Passé' : 'À Venir' }}
-          </div>
+          <div [ngClass]="isEventPast(event) ? 'bg-gray-500' : 'bg-green-500'" class="absolute top-4 left-4 text-white text-xs font-bold px-3 py-1 rounded-full shadow">{{ isEventPast(event) ? 'Passé' : 'À Venir' }}</div>
         </div>
         <div class="p-6 flex flex-col flex-grow">
           <div class="flex items-center text-sm text-gray-500 mb-2">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            {{ event.location }}
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> {{ event.location }}
           </div>
           <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors cursor-pointer" (click)="openModal(event)">{{ event.title }}</h3>
           <p class="text-gray-600 text-sm line-clamp-3 mb-4 flex-grow">{{ event.description }}</p>
@@ -79,23 +64,23 @@
            <span [ngClass]="isEventPast(selectedEvent) ? 'bg-gray-500' : 'bg-green-500'" class="text-xs font-bold px-2 py-1 rounded mb-2 inline-block">{{ isEventPast(selectedEvent) ? 'PASSÉ' : 'À VENIR' }}</span>
            <h2 class="text-3xl font-bold">{{ selectedEvent.title }}</h2>
            <div class="flex items-center mt-2 text-gray-200">
-             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> {{ selectedEvent.date | date:'fullDate' }}
+             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> {{ selectedEvent.date | date:'fullDate' }}
              <span class="mx-3">•</span>
-             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> {{ selectedEvent.location }}
+             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg> {{ selectedEvent.location }}
            </div>
         </div>
       </div>
 
       <div class="p-6 sm:p-8">
         <div class="prose max-w-none text-gray-700 mb-8 whitespace-pre-wrap">{{ selectedEvent.description }}</div>
+        
         <div class="border-t border-gray-100 my-8"></div>
-
         <h3 class="text-xl font-bold text-gray-900 mb-4" *ngIf="(selectedEvent.galleryImages?.length || 0) + (selectedEvent.galleryVideos?.length || 0) > 0">Galerie Média</h3>
 
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div *ngFor="let img of selectedEvent.galleryImages; let i = index" 
                class="relative aspect-square cursor-pointer group rounded-lg overflow-hidden"
-               (click)="openGalleryLightbox(i, selectedEvent.galleryImages, selectedEvent.galleryVideos)">
+               (click)="openGallery(i, selectedEvent.galleryImages, selectedEvent.galleryVideos)">
             <img [src]="img" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
@@ -104,11 +89,9 @@
           
           <div *ngFor="let vid of selectedEvent.galleryVideos; let j = index" 
                class="col-span-2 aspect-video bg-black rounded-lg overflow-hidden cursor-pointer group relative"
-               (click)="openGalleryLightbox((selectedEvent.galleryImages?.length || 0) + j, selectedEvent.galleryImages, selectedEvent.galleryVideos)">
-             <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" [src]="vid"></video>
-             <div class="absolute inset-0 flex items-center justify-center">
-                <svg class="w-12 h-12 text-white opacity-80 group-hover:opacity-100" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
-             </div>
+               (click)="openGallery((selectedEvent.galleryImages?.length || 0) + j, selectedEvent.galleryImages, selectedEvent.galleryVideos)">
+             <video class="w-full h-full object-cover opacity-80 group-hover:opacity-100" [src]="vid"></video>
+             <div class="absolute inset-0 flex items-center justify-center"><svg class="w-12 h-12 text-white opacity-80 group-hover:opacity-100" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg></div>
           </div>
         </div>
       </div>
@@ -120,22 +103,21 @@
   </div>
 </div>
 
-<div *ngIf="isLightboxOpen" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 transition-opacity duration-300" (click)="closeLightbox()">
+<div *ngIf="isLightboxOpen" class="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 transition-opacity duration-300" (click)="closeGallery()">
   
-  <button class="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-[110]" (click)="closeLightbox()">
+  <button class="absolute top-4 right-4 text-white hover:text-gray-300 p-2 z-[110]" (click)="closeGallery()">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
   </button>
 
-  <button *ngIf="lightboxItems.length > 1" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block hover:bg-black/20 rounded-full transition-all" (click)="prevMedia($event)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+  <button *ngIf="lightboxItems.length > 1" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] bg-black/30 hover:bg-black/60 rounded-full transition-all" (click)="prevMedia($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
   </button>
 
-  <button *ngIf="lightboxItems.length > 1" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] hidden md:block hover:bg-black/20 rounded-full transition-all" (click)="nextMedia($event)">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+  <button *ngIf="lightboxItems.length > 1" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-4 z-[110] bg-black/30 hover:bg-black/60 rounded-full transition-all" (click)="nextMedia($event)">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
   </button>
 
   <div class="relative max-w-7xl w-full h-full flex flex-col items-center justify-center" (click)="$event.stopPropagation()">
-    
     <img *ngIf="lightboxItems[lightboxIndex].type === 'image'" 
          [src]="lightboxItems[lightboxIndex].url" 
          class="max-w-full max-h-[85vh] object-contain rounded-md shadow-2xl animate-fade-in select-none">
@@ -146,8 +128,8 @@
            class="max-w-full max-h-[85vh] w-auto rounded-md shadow-2xl">
     </video>
 
-    <div class="absolute bottom-4 left-0 right-0 text-center text-white/80 pointer-events-none">
-      <p class="text-sm">{{ lightboxIndex + 1 }} / {{ lightboxItems.length }}</p>
+    <div class="absolute bottom-4 left-0 right-0 text-center text-white/80 pointer-events-none font-mono text-sm">
+      {{ lightboxIndex + 1 }} / {{ lightboxItems.length }}
     </div>
   </div>
 </div>

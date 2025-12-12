@@ -30,7 +30,7 @@ export class EvenementsComponent implements OnInit {
   selectedEvent: Event | null = null;
   isModalOpen = false;
 
-  // --- LOGIQUE LIGHTBOX AVANCÉE ---
+  // --- GALERIE JS STATE ---
   isLightboxOpen = false;
   lightboxItems: LightboxItem[] = [];
   lightboxIndex = 0;
@@ -45,7 +45,7 @@ export class EvenementsComponent implements OnInit {
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erreur chargement événements', err);
+        console.error('Erreur', err);
         this.isLoading = false;
       }
     });
@@ -53,7 +53,6 @@ export class EvenementsComponent implements OnInit {
 
   applyFilter(filter: FilterType): void {
     this.currentFilter = filter;
-    
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
@@ -74,7 +73,7 @@ export class EvenementsComponent implements OnInit {
     }
   }
 
-  // --- GESTION MODALE DÉTAILS ---
+  // --- MODALE DÉTAILS ---
   openModal(event: Event): void {
     this.selectedEvent = event;
     this.isModalOpen = true;
@@ -87,26 +86,28 @@ export class EvenementsComponent implements OnInit {
     document.body.style.overflow = 'auto';
   }
 
-  // --- GESTION LIGHTBOX (GALERIE) ---
-  
-  openGalleryLightbox(index: number, images: string[] = [], videos: string[] = []) {
+  // --- GALERIE PLEIN ÉCRAN (JS STYLE) ---
+  openGallery(index: number, images: string[] = [], videos: string[] = []) {
+    // 1. On construit une liste propre de tous les médias
     this.lightboxItems = [
       ...images.map(url => ({ type: 'image' as const, url })),
       ...videos.map(url => ({ type: 'video' as const, url }))
     ];
     
+    // 2. On définit l'index de départ
     this.lightboxIndex = index;
+    
+    // 3. On ouvre la galerie par dessus le popup
     this.isLightboxOpen = true;
   }
 
-  closeLightbox() {
+  closeGallery() {
     this.isLightboxOpen = false;
     this.lightboxItems = [];
   }
 
-  // CORRECTION ICI : Utilisation de 'any' pour éviter le conflit de type avec le modèle 'Event'
   nextMedia(e?: any) {
-    if (e) e.stopPropagation();
+    if(e) e.stopPropagation();
     if (this.lightboxIndex < this.lightboxItems.length - 1) {
       this.lightboxIndex++;
     } else {
@@ -114,9 +115,8 @@ export class EvenementsComponent implements OnInit {
     }
   }
 
-  // CORRECTION ICI : Utilisation de 'any'
   prevMedia(e?: any) {
-    if (e) e.stopPropagation();
+    if(e) e.stopPropagation();
     if (this.lightboxIndex > 0) {
       this.lightboxIndex--;
     } else {
@@ -126,9 +126,7 @@ export class EvenementsComponent implements OnInit {
 
   // --- HELPERS ---
   getCoverImage(event: Event): string {
-    if (event.galleryImages && event.galleryImages.length > 0) {
-      return event.galleryImages[0];
-    }
+    if (event.galleryImages && event.galleryImages.length > 0) return event.galleryImages[0];
     return 'https://via.placeholder.com/800x600?text=Kyranis+Park';
   }
 
@@ -139,15 +137,18 @@ export class EvenementsComponent implements OnInit {
     return d < now;
   }
 
+  // Navigation Clavier
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
+    // Si la galerie est ouverte, elle prend le focus
     if (this.isLightboxOpen) {
-      if (event.key === 'Escape') this.closeLightbox();
+      if (event.key === 'Escape') this.closeGallery();
       if (event.key === 'ArrowRight') this.nextMedia();
       if (event.key === 'ArrowLeft') this.prevMedia();
       return; 
     }
 
+    // Sinon c'est le popup détails
     if (this.isModalOpen && event.key === 'Escape') {
       this.closeModal();
     }
