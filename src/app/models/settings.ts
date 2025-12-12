@@ -1,6 +1,5 @@
 /**
- * Interface pour la collection 'settings' (document unique généralement).
- * Contient les informations globales du site.
+ * Interface pour la collection 'settings'.
  */
 export interface AppSettings {
   businessName: string;
@@ -9,9 +8,17 @@ export interface AppSettings {
   email: string;
   facebookUrl: string;
   
-  /** Code HTML de l'iframe Google Maps ou URL */
   googleMapsEmbed: string;
-  
   homePageDescription: string;
   parkDescription: string;
+
+  // Config Header
+  header?: {
+    logoText: string;
+    logoUrl?: string; // NOUVEAU: URL de l'image
+    menuHome: string;
+    menuEvents: string;
+    menuReservations: string;
+    menuContact: string;
+  };
 }

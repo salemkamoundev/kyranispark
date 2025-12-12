@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { FirestoreService } from '../../../services/firestore.service';
+import { SupabaseService } from '../../../services/supabase.service';
 
 @Component({
   selector: 'app-settings',
@@ -12,26 +13,38 @@ import { FirestoreService } from '../../../services/firestore.service';
 })
 export class SettingsComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
+  private supabaseService = inject(SupabaseService);
   private fb = inject(FormBuilder);
 
   settingsForm: FormGroup;
   isLoading = true;
   isSaving = false;
+  isUploadingLogo = false; // État upload
+  
   toastMessage: string | null = null;
   toastType: 'success' | 'error' = 'success';
 
   constructor() {
-    // MODIFICATION: Suppression des Validators.required pour rendre les champs optionnels
     this.settingsForm = this.fb.group({
       businessName: ['Kyranis Park'],
       address: [''],
       phone: ['+216 28 417 822'],
-      email: [''], // Plus de validation email stricte bloquante
+      email: [''],
       facebookUrl: [''],
       homePageDescription: [''],
       parkDescription: [''],
       googleMapsEmbed: [''],
       openingHours: ['Du Lundi au Dimanche, 09h - 22h'],
+      
+      header: this.fb.group({
+        logoText: ['KYRANIS PARK'],
+        logoUrl: [''], // Champ caché pour l'URL de l'image
+        menuHome: ['Accueil'],
+        menuEvents: ['Événements'],
+        menuReservations: ['Réservations'],
+        menuContact: ['Contact']
+      }),
+
       boatPrices: this.fb.group({
         flouka: [150],
         speed_boat: [400],
@@ -56,7 +69,6 @@ export class SettingsComponent implements OnInit {
     this.firestoreService.getSettings().subscribe({
       next: (data: any) => {
         if (data) {
-          // patchValue permet de ne mettre à jour que les champs présents
           this.settingsForm.patchValue(data);
         }
         this.isLoading = false;
@@ -69,10 +81,40 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  async onSubmit() {
-    // MODIFICATION: Suppression du bloc de vérification (if invalid return)
-    // Le formulaire est sauvegardé même s'il manque des infos.
+  // --- LOGO UPLOAD ---
+  async handleLogoUpload(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
 
+    this.isUploadingLogo = true;
+    try {
+      // Upload vers un dossier 'settings'
+      const result = await this.supabaseService.uploadImage(file, 'settings');
+      
+      // Mise à jour du formulaire avec l'URL
+      this.settingsForm.get('header')?.patchValue({
+        logoUrl: result.url
+      });
+      
+      this.showToast('Logo téléchargé avec succès', 'success');
+    } catch (error) {
+      console.error(error);
+      this.showToast('Erreur upload logo', 'error');
+    } finally {
+      this.isUploadingLogo = false;
+    }
+  }
+
+  removeLogo() {
+    if(confirm('Supprimer le logo et revenir au texte seul ?')) {
+      this.settingsForm.get('header')?.patchValue({
+        logoUrl: ''
+      });
+    }
+  }
+
+  // --- SAVE ---
+  async onSubmit() {
     this.isSaving = true;
     const formData = this.settingsForm.value;
 

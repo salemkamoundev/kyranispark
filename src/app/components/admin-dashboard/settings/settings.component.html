@@ -3,7 +3,7 @@
   <div class="flex justify-between items-center mb-6">
     <h2 class="text-2xl font-bold text-gray-800">Paramètres Généraux</h2>
     <div *ngIf="isSaving" class="flex items-center text-blue-600 text-sm">
-      <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+      <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
       Sauvegarde...
     </div>
   </div>
@@ -17,109 +17,98 @@
 
   <form [formGroup]="settingsForm" (ngSubmit)="onSubmit()" class="space-y-6">
     
+    <div class="bg-white shadow rounded-lg p-6" formGroupName="header">
+      <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Configuration du Header (Menu)</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="md:col-span-2 border p-4 rounded bg-gray-50">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Logo du Site</label>
+          
+          <div class="flex items-center gap-6">
+            <div class="h-16 w-auto min-w-[100px] border bg-white flex items-center justify-center rounded overflow-hidden">
+               <img *ngIf="settingsForm.get('header.logoUrl')?.value" 
+                    [src]="settingsForm.get('header.logoUrl')?.value" 
+                    class="h-full object-contain">
+               <span *ngIf="!settingsForm.get('header.logoUrl')?.value" class="text-xs text-gray-400">Aucun logo</span>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label class="cursor-pointer bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200 transition text-center">
+                <span *ngIf="!isUploadingLogo">Télécharger une image</span>
+                <span *ngIf="isUploadingLogo">Upload en cours...</span>
+                <input type="file" class="hidden" accept="image/*" (change)="handleLogoUpload($event)" [disabled]="isUploadingLogo">
+              </label>
+              
+              <button *ngIf="settingsForm.get('header.logoUrl')?.value" 
+                      type="button" 
+                      (click)="removeLogo()" 
+                      class="text-red-600 text-xs hover:underline text-center">
+                Supprimer le logo
+              </button>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">Si aucun logo n'est défini, le texte ci-dessous sera affiché.</p>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Texte du Logo (Fallback)</label>
+          <input type="text" formControlName="logoText" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 font-bold">
+        </div>
+
+        <div><label class="block text-sm font-medium text-gray-700">Label "Accueil"</label><input type="text" formControlName="menuHome" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Label "Événements"</label><input type="text" formControlName="menuEvents" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Label "Réservations"</label><input type="text" formControlName="menuReservations" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Label "Contact"</label><input type="text" formControlName="menuContact" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+      </div>
+    </div>
+
     <div class="bg-white shadow rounded-lg p-6">
       <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Informations Entreprise</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Nom du Business</label>
-          <input type="text" formControlName="businessName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Horaires d'ouverture</label>
-          <input type="text" formControlName="openingHours" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Téléphone</label>
-          <input type="text" formControlName="phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Email Contact</label>
-          <input type="email" formControlName="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">Adresse</label>
-          <input type="text" formControlName="address" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-sm font-medium text-gray-700">URL Facebook Page</label>
-          <input type="text" formControlName="facebookUrl" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500">
-        </div>
+        <div><label class="block text-sm font-medium text-gray-700">Nom du Business</label><input type="text" formControlName="businessName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Horaires</label><input type="text" formControlName="openingHours" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Téléphone</label><input type="text" formControlName="phone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Email</label><input type="email" formControlName="email" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Adresse</label><input type="text" formControlName="address" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700">Facebook URL</label><input type="text" formControlName="facebookUrl" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
       </div>
     </div>
 
     <div class="bg-white shadow rounded-lg p-6">
       <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Contenu & Localisation</h3>
       <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Description Page d'Accueil</label>
-          <textarea formControlName="homePageDescription" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"></textarea>
-          <p class="text-xs text-gray-500 mt-1">S'affiche dans la section présentation de l'accueil.</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Description Parc (Page Contact/Infos)</label>
-          <textarea formControlName="parkDescription" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Google Maps Embed Code (HTML)</label>
-          <textarea formControlName="googleMapsEmbed" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 font-mono text-xs text-gray-600"></textarea>
-          <p class="text-xs text-gray-500 mt-1">Collez ici le code &lt;iframe&gt; fourni par Google Maps.</p>
-        </div>
+        <div><label class="block text-sm font-medium text-gray-700">Intro Accueil</label><textarea formControlName="homePageDescription" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></textarea></div>
+        <div><label class="block text-sm font-medium text-gray-700">Description Parc</label><textarea formControlName="parkDescription" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></textarea></div>
+        <div><label class="block text-sm font-medium text-gray-700">Google Maps Embed</label><textarea formControlName="googleMapsEmbed" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 font-mono text-xs"></textarea></div>
       </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
       <div class="bg-white shadow rounded-lg p-6" formGroupName="boatPrices">
-        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Bateaux (TND)</h3>
+        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Bateaux</h3>
         <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Flouka</label>
-            <input type="number" formControlName="flouka" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Speed Boat</label>
-            <input type="number" formControlName="speed_boat" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Catamaran</label>
-            <input type="number" formControlName="catamaran" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Yacht</label>
-            <input type="number" formControlName="yacht" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
+          <div class="flex justify-between"><label>Flouka</label><input type="number" formControlName="flouka" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Speed Boat</label><input type="number" formControlName="speed_boat" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Catamaran</label><input type="number" formControlName="catamaran" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Yacht</label><input type="number" formControlName="yacht" class="w-24 border rounded px-2"></div>
         </div>
       </div>
-
       <div class="bg-white shadow rounded-lg p-6" formGroupName="eventPrices">
-        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Espace Privé (TND)</h3>
+        <h3 class="text-lg font-medium text-gray-900 border-b pb-2 mb-4">Tarifs Espace Privé</h3>
         <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Anniversaire</label>
-            <input type="number" formControlName="birthday" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Mariage</label>
-            <input type="number" formControlName="marriage" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Conférence</label>
-            <input type="number" formControlName="conference" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
-          <div class="flex justify-between items-center">
-            <label class="text-sm font-medium text-gray-700">Autre</label>
-            <input type="number" formControlName="other" class="w-32 border border-gray-300 rounded-md shadow-sm py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
-          </div>
+          <div class="flex justify-between"><label>Anniversaire</label><input type="number" formControlName="birthday" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Mariage</label><input type="number" formControlName="marriage" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Conférence</label><input type="number" formControlName="conference" class="w-24 border rounded px-2"></div>
+          <div class="flex justify-between"><label>Autre</label><input type="number" formControlName="other" class="w-24 border rounded px-2"></div>
         </div>
       </div>
     </div>
 
     <div class="flex justify-end space-x-4 pt-4">
-      <button type="button" (click)="resetForm()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-        Réinitialiser
-      </button>
-      <button type="submit" [disabled]="isSaving" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
-        {{ isSaving ? 'Enregistrement...' : 'Enregistrer les modifications' }}
+      <button type="button" (click)="resetForm()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">Réinitialiser</button>
+      <button type="submit" [disabled]="isSaving" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50">
+        {{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}
       </button>
     </div>
 
