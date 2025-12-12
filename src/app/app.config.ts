@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideZoneChangeDetection, isDevMode } from '@angular/core';
-import { provideRouter, withComponentInputBinding, withViewTransitions } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 
@@ -21,28 +21,29 @@ export const appConfig: ApplicationConfig = {
     // Optimisation Angular 18
     provideZoneChangeDetection({ eventCoalescing: true }),
     
-    // Router avec fonctionnalités modernes (Input Binding pour params, Transitions de vue)
+    // Router : Retrait de withViewTransitions() qui cause l'erreur InvalidStateError
     provideRouter(
       routes, 
-      withComponentInputBinding(), 
-      withViewTransitions()
+      withComponentInputBinding()
     ),
     
-    // Animations (Requis pour UI libraries)
+    // Animations
     provideAnimations(),
 
-    // HTTP Client (Pour Supabase interne ou API externes)
+    // HTTP Client
     provideHttpClient(),
 
     // --- FIREBASE INITIALIZATION ---
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     
     // Services Firebase
-    provideAuth(() => getAuth()),           // Authentification
-    provideFirestore(() => getFirestore()), // Base de données
-    provideStorage(() => getStorage()), provideServiceWorker('ngsw-worker.js', {
-            enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
-          })      // Stockage (Optionnel si Supabase utilisé)
+    provideAuth(() => getAuth()),           
+    provideFirestore(() => getFirestore()), 
+    provideStorage(() => getStorage()), 
+    
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ]
 };

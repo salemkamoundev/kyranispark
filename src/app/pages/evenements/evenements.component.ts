@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FirestoreService } from '../../services/firestore.service';
 import { Event } from '../../models';
-import { Observable, map, tap } from 'rxjs';
 
 type FilterType = 'all' | 'upcoming' | 'past';
 
@@ -16,34 +15,24 @@ type FilterType = 'all' | 'upcoming' | 'past';
 export class EvenementsComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
 
-  // Données brutes
+  // Données
   allEvents: Event[] = [];
-  
-  // Données filtrées pour l'affichage
   filteredEvents: Event[] = [];
-  
-  // État du filtre
   currentFilter: FilterType = 'all';
   
-  // État du chargement
   isLoading = true;
-
-  // État de la Modal Détail
   selectedEvent: Event | null = null;
   isModalOpen = false;
-
-  // État de la Lightbox (Zoom image dans le modal)
   lightboxImage: string | null = null;
 
   constructor() {}
 
   ngOnInit(): void {
-    // On charge tous les événements une seule fois et on filtre côté client
-    // car le volume n'est pas énorme
     this.firestoreService.getEvents().subscribe({
       next: (events) => {
         this.allEvents = events;
-        this.applyFilter('all'); // Défaut: tous
+        // On applique le filtre par défaut
+        this.applyFilter('all'); 
         this.isLoading = false;
       },
       error: (err) => {
@@ -53,35 +42,35 @@ export class EvenementsComponent implements OnInit {
     });
   }
 
-  /**
-   * Applique le filtre (Tout, À venir, Passés)
-   */
   applyFilter(filter: FilterType): void {
     this.currentFilter = filter;
+    
+    // FIX: On prend la date actuelle à Minuit (00:00:00)
+    // pour que les événements d'AUJOURD'HUI soient considérés comme "À venir"
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
 
     if (filter === 'all') {
       this.filteredEvents = [...this.allEvents];
     } else if (filter === 'upcoming') {
-      // Événements futurs (date >= maintenant)
-      this.filteredEvents = this.allEvents.filter(e => e.date >= now);
-      // Tri: du plus proche au plus lointain
-      this.filteredEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+      this.filteredEvents = this.allEvents.filter(e => {
+        const d = e.date instanceof Date ? e.date : new Date(e.date);
+        return d >= now;
+      });
+      this.filteredEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     } else if (filter === 'past') {
-      // Événements passés
-      this.filteredEvents = this.allEvents.filter(e => e.date < now);
-      // Tri: du plus récent au plus vieux
-      this.filteredEvents.sort((a, b) => b.date.getTime() - a.date.getTime());
+      this.filteredEvents = this.allEvents.filter(e => {
+        const d = e.date instanceof Date ? e.date : new Date(e.date);
+        return d < now;
+      });
+      this.filteredEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
   }
 
-  /**
-   * Gestion de la Modal Détails
-   */
   openModal(event: Event): void {
     this.selectedEvent = event;
     this.isModalOpen = true;
-    document.body.style.overflow = 'hidden'; // Bloque le scroll body
+    document.body.style.overflow = 'hidden';
   }
 
   closeModal(): void {
@@ -90,24 +79,20 @@ export class EvenementsComponent implements OnInit {
     document.body.style.overflow = 'auto';
   }
 
-  /**
-   * Helpers d'affichage
-   */
   getCoverImage(event: Event): string {
     if (event.galleryImages && event.galleryImages.length > 0) {
       return event.galleryImages[0];
     }
-    // Placeholder si pas d'image
     return 'https://via.placeholder.com/800x600?text=Kyranis+Park';
   }
 
   isEventPast(event: Event): boolean {
-    return event.date < new Date();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const d = event.date instanceof Date ? event.date : new Date(event.date);
+    return d < now;
   }
 
-  /**
-   * Lightbox Interne au Modal
-   */
   openLightbox(imgUrl: string): void {
     this.lightboxImage = imgUrl;
   }

@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { FirestoreService } from '../../../services/firestore.service';
 
 @Component({
@@ -21,11 +21,12 @@ export class SettingsComponent implements OnInit {
   toastType: 'success' | 'error' = 'success';
 
   constructor() {
+    // MODIFICATION: Suppression des Validators.required pour rendre les champs optionnels
     this.settingsForm = this.fb.group({
-      businessName: ['Kyranis Park', Validators.required],
+      businessName: ['Kyranis Park'],
       address: [''],
-      phone: ['+216 28 417 822', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      phone: ['+216 28 417 822'],
+      email: [''], // Plus de validation email stricte bloquante
       facebookUrl: [''],
       homePageDescription: [''],
       parkDescription: [''],
@@ -55,6 +56,7 @@ export class SettingsComponent implements OnInit {
     this.firestoreService.getSettings().subscribe({
       next: (data: any) => {
         if (data) {
+          // patchValue permet de ne mettre à jour que les champs présents
           this.settingsForm.patchValue(data);
         }
         this.isLoading = false;
@@ -68,11 +70,8 @@ export class SettingsComponent implements OnInit {
   }
 
   async onSubmit() {
-    if (this.settingsForm.invalid) {
-      this.settingsForm.markAllAsTouched();
-      this.showToast('Veuillez vérifier les champs requis', 'error');
-      return;
-    }
+    // MODIFICATION: Suppression du bloc de vérification (if invalid return)
+    // Le formulaire est sauvegardé même s'il manque des infos.
 
     this.isSaving = true;
     const formData = this.settingsForm.value;

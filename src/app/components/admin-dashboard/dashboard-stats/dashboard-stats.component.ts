@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FirestoreService } from '../../../services/firestore.service';
 import { forkJoin } from 'rxjs';
-import { map, take } from 'rxjs/operators';
+import { take } from 'rxjs/operators';
 import { Event, Reservation, Gallery } from '../../../models';
 
 @Component({
@@ -14,7 +14,6 @@ import { Event, Reservation, Gallery } from '../../../models';
 })
 export class DashboardStatsComponent implements OnInit {
   private firestoreService = inject(FirestoreService);
-
   isLoading = true;
 
   stats = {
@@ -92,10 +91,10 @@ export class DashboardStatsComponent implements OnInit {
       confirmed,
       cancelled
     };
-    
+
     const maxRev = Math.max(...monthlyData, 1);
     const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-    
+
     this.stats.revenue = {
       total: totalRev,
       monthly: monthlyData.map((amount, index) => ({
@@ -107,7 +106,10 @@ export class DashboardStatsComponent implements OnInit {
   }
 
   processEvents(events: Event[]) {
+    // FIX: Utilisation de minuit pour inclure aujourd'hui
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
     let upcoming = 0;
     let past = 0;
 
